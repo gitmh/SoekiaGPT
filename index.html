@@ -1,0 +1,3570 @@
+<!DOCTYPE html>
+<html lang="de" ng-app="eduSLMEngine">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="node_modules/angular-material/angular-material.css">
+  <link rel="stylesheet" href="fonts/roboto.css">
+
+  <title>SoekiaGPT - Das didaktische Sprachmodell</title>
+  <meta name="description" content="SoekiaGPT ist ein Textgenerator speziell für den Unterricht. Mit SoekiaGPT kannst Du hinter die Kulissen schauen und damit einige Grundprinzipien von Textgeneratoren wie ChatGPT kennenlernen.">
+
+  <meta property="og:url"                content="https://soekia.ch/gpt.html" />
+  <meta property="og:type"               content="article" />
+  <meta property="og:title"              content="SoekiaGPT - Das didaktische Sprachmodell" />
+  <meta property="og:description"        content="SoekiaGPT ist ein Textgenerator speziell für den Unterricht. Mit SoekiaGPT kannst Du hinter die Kulissen schauen und damit einige Grundprinzipien von Textgeneratoren wie ChatGPT kennenlernen." />
+  <meta property="og:image"              content="https://soekia.ch/GPT/soekiaGPT.png" />
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="twitter:domain" content="soekia.ch">
+  <meta property="twitter:url" content="https://www.soekia.ch/gpt.html">
+  <meta name="twitter:title" content="SoekiaGPT - Das didaktische Sprachmodell">
+  <meta name="twitter:description" content="SoekiaGPT ist ein Textgenerator speziell für den Unterricht. Mit SoekiaGPT kannst Du hinter die Kulissen schauen und damit einige Grundprinzipien von Textgeneratoren wie ChatGPT kennenlernen.">
+  <meta name="twitter:image" content="https://soekia.ch/GPT/soekiaGPT.png">
+
+
+</head>
+  <body ng-controller="eduSLMEngineCtl as self" ng-cloak style="overflow:hidden">
+  <div id="wrapper" style="overflow:auto;width:100%;height:100%;position: absolute;left: 0;" ng-style="{'overflow':self.showInsideButton ? 'hidden':'auto'}">
+    <div layout="row" style="height:100%">
+    <div id="inputPanel" class="inputPanel" ng-class="{'hideInside':self.showInsideButton}" layout="column" layout-align="start start">
+      <md-toolbar style="background:#4757c5;height:64px;padding:12px" class="md-hue-2" layout="row">
+        <!--
+        <md-button ng-if="!self.currentCoCollection" ng-click="self.showTestBench($event)" style="margin:0;min-width: 1em;">
+          <ng-md-icon style="fill:white" icon="event_note"></ng-md-icon>
+          <md-tooltip>Test-Bench</md-tooltip>
+        </md-button>
+        -->
+        <span flex style="line-height:40px">{{'GENERATETEXT' | trans}}</span>
+        <md-button ng-show="self.showInsideButton" class="md-raised documentsButton" style="color:white;background:rgba(0,0,0,0.05);min-width:1em;margin:0" ng-click="self.showInsideButton = !self.showInsideButton">
+          {{'LOOKINSIDE' | trans}} <ng-md-icon style="fill:white" icon="arrow_forward"></ng-md-icon>
+          <md-tooltip md-direction="bottom">{{'HOWDOESITWORK' | trans}}</md-tooltip>
+        </md-button>
+        <md-button ng-show="!self.showInsideButton" class="seeInsideBtn md-raised documentsButton" style="color:white;background:rgba(0,0,0,0.05);min-width:1em;margin:0" aria-label="Hineinschauen" ng-click="self.showInsideButton = !self.showInsideButton; self.pauseGenerating()">
+          <ng-md-icon style="fill:white" icon="arrow_back"></ng-md-icon>
+          <md-tooltip md-direction="bottom">{{'BACKTOTEXT' | trans}}</md-tooltip>
+        </md-button>
+        <md-button ng-show="!self.showInsideButton" class="seeInsideBtn2 md-raised documentsButton" style="color:white;background:rgba(0,0,0,0.05);min-width:1em;margin:0" aria-label="Hineinschauen" ng-click="self.pauseGenerating(); self.scrollRight()">
+          <ng-md-icon style="fill:white" icon="arrow_forward"></ng-md-icon>
+        </md-button>
+      </md-toolbar>
+
+      <div style="padding:1em;padding-bottom:5em;overflow:auto;width:100%;box-sizing: border-box;" fill-layout>
+
+        <div style="text-align:center;user-select:none;-webkit-user-select:none"><img src="../soekiaGPT.png" style="max-width:50%;margin:1em" draggable="false" alt="Soekia GPT"/></div>
+ 
+        <div style="max-width: 600px;margin-left: auto;margin-right: auto;">
+          <div style="position:relative; margin-bottom:1em;background:#f0f2fc;border-radius:8px;padding:1em;" id="TaskBox" ng-if="!self.firstPrompt">
+            {{self.prompt}}
+          </div>
+
+          <div id="PromptBox" ng-show="self.input.length == 0" style="position:relative;">
+            <input placeholder="{{(self.promptDefault == '' ? 'Prompt' : self.promptDefault) + ' ...'}}" ng-change="self.promptSplit = null" style="background:transparent;border:0;width:100%;position:relative; margin-bottom:1em;background:white;border-radius:8px;padding:1em;box-sizing: border-box; font-style: italic;width:100%;padding-right:52px" ng-model="self.prompt"/>
+            <md-button ng-click="self.startWithPrompt()" style="position: absolute;right: 0;top:0;min-width: 3em;" aria-label="start" ><ng-md-icon style="fill:black" icon="send"></ng-md-icon></md-button>
+          </div>
+          <div id="inputBox" ng-show="self.input.length > 0" style="position:relative; margin-bottom:1em;background:#f0f2fc;border-radius:8px;padding:0.6em;min-height:68px;padding-bottom:2.4em" >
+
+            <md-button ng-if="self.input.length > 0" class="hideUnselected1" style="position: absolute;bottom:0;right:72px; margin: 0; min-width: 1em;" ng-click="self.showSource = !self.showSource">
+              <ng-md-icon ng-style="{'fill':self.showSource?'black':'#ccc'}" icon="remove_red_eye"></ng-md-icon>
+              <md-tooltip>{{'SHOWSOURCESHINT' | trans}}</md-tooltip>
+            </md-button>
+            <md-button ng-if="self.input.length > 0" class="hideUnselected1" style="position: absolute;bottom:0;right:36px; margin: 0; min-width: 1em;" ng-click="self.copyTextToClipboard(null)">
+              <ng-md-icon style="fill:black" icon="content_copy"></ng-md-icon>
+              <md-tooltip>{{'COPYTEXTHINT' | trans}}</md-tooltip>
+            </md-button>
+            <md-button ng-if="self.input.length > 0" class="hideUnselected1" style="position: absolute;bottom:0;right:0; margin: 0; min-width: 1em;" ng-click="self.pauseGenerating();self.deleteWord();">
+              <ng-md-icon style="fill:black" icon="delete_forever"></ng-md-icon>
+              <md-tooltip>{{'RESTARTHINT' | trans}}</md-tooltip>
+            </md-button>
+
+            <div ng-if="self.input.length == 0" style="color:#999;padding: 0.4em 0.3em;padding-top:0">
+                
+            </div>
+
+            <div ng-repeat="w in self.input track by $index" class="input {{self.getDocumentSourceClass(w)}}" style="display:inline-block;vertical-align: middle;padding:0.4em 0.3em;padding-right:0;border-radius:8px;background:white;color:black;margin:0em" ng-class="{'mark':self.isMark(w.text),'newline':w.text == '\n','nextMark':self.input.length > $index+1 && self.isMark(self.input[$index+1].text)}" ng-if="w.text != '❯'">
+              {{w.text}}
+              <md-tooltip ng-if="toolTip = self.getDocumentSourceName(w)">{{toolTip}}</md-tooltip>
+            </div>
+            <div ng-if="self.input.length > 0 && self.isGenerating && !(self.isSingleGenerating && self.singleSteps == 0)" class="input" style="display:inline-block;vertical-align: middle;padding:0.4em 0.3em;padding-right:0;border-radius:8px;background:#f3f3f3;color:black;margin:0em">
+              <div id="wave"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            </div>
+
+            <div ng-if="self.showMusicPlayer && self.input.length > 0 && !self.isGenerating" style="position: absolute; left: 0px; bottom: 0;">
+              <md-button ng-click="self.playABCMusic($event)" style="text-transform: none;margin:0">
+                <ng-md-icon style="fill:black" icon="music_note"></ng-md-icon>
+                <ng-md-icon style="fill:black" icon="play_arrow"></ng-md-icon>
+                abc-Music-Player
+              </md-button>
+            </div>
+          </div>
+
+          <div ng-if="self.isManualMode && self.input.length > 0" style="padding:0.5em;padding-top:0;padding-right: 0;padding-left:0;user-select:none;-webkit-user-select:none" layout="row">
+            <div style="width:100%">
+              <div ng-repeat="w in self.nextSuggestions track by $index" style="display:inline-block;text-transform:none;padding:0.5em 0.75em;text-align:center;border-radius:8px;min-width:1em;margin:0.2em;cursor:pointer" ng-click="self.addNextWord(w)" ng-class="w.ngram">
+                {{w.text}}
+              </div>  
+            </div>  
+            <span style="white-space: nowrap;" layout="column" layout-align="start end">
+              <div>
+                <md-button ng-if="self.isManualMode" class="md-sunk" ng-click="self.pauseGenerating();self.isManualMode = false" style="background-color:#f15757; margin:0;text-transform: none;"><ng-md-icon icon="face" style="fill:white"></ng-md-icon> {{'SELECTMANUAL' | trans}}</md-button>              
+              </div>
+              <div style="padding-top: 8px;" ng-if="self.input.length > 0">
+                <div style="display:inline-block;vertical-align: middle;padding:0.25em;border-radius:8px;color:black;margin:0em;cursor:pointer" ng-click="self.deleteLastWord()" aria-label="Backspace"><ng-md-icon style="top:0px;fill:black" icon="backspace"></ng-md-icon></div>
+
+                <md-menu>
+                  <div ng-click="$mdMenu.open($event)" style="min-width: 1em;display:inline-block;vertical-align: middle;padding:0.25em;border-radius:8px;color:black;margin:0em;cursor:pointer" aria-label="Satzzeichen">
+                    <ng-md-icon style="fill:black;top:0" icon="more_vert"></ng-md-icon>
+                  </div>
+                  <md-menu-content>
+                    <md-menu-item layout="row">
+                      <div class="ngram1" style="display:inline-block;vertical-align: middle;padding:0.5em 0.75em;border-radius:8px;background:#eee;color:black;margin-left:1em;cursor:pointer;margin-right:1em;" ng-click="self.addNextWord({text:':',token:':'})">:</div>
+                      <div class="ngram1" style="display:inline-block;vertical-align: middle;padding:0.5em 0.75em;border-radius:8px;background:#eee;color:black;margin-right:1em;cursor:pointer" ng-click="self.addNextWord({text:',',token:','})">,</div>
+                      <div class="ngram1" style="display:inline-block;vertical-align: middle;padding:0.5em 0.75em;border-radius:8px;background:#eee;color:black;margin-right:1em;cursor:pointer" ng-click="self.addNextWord({text:'.',token:'.'})">.</div>
+                      <div class="ngram1" style="display:inline-block;vertical-align: middle;padding:0.5em 0.75em;border-radius:8px;background:#eee;color:black;margin-right:1em;cursor:pointer" ng-click="self.addNextWord({text:'?',token:'?'})">?</div>
+                      <div class="ngram1" style="display:inline-block;vertical-align: middle;padding:0.5em 0.75em;border-radius:8px;background:#eee;color:black;margin-right:1em;cursor:pointer" ng-click="self.addNextWord({text:'!',token:'!'})">!</div>
+                    </md-menu-item>
+                  </md-menu-content>
+                </md-menu>
+
+                <div style="display:inline-block;vertical-align: middle;padding:0.25em;border-radius:8px;color:black;margin:0em;cursor:pointer" ng-click="self.addNextWord({text:'\n',token:'\n'})"><ng-md-icon style="top:0px;fill:black" icon="keyboard_return"></ng-md-icon></div>
+              </div>
+            </span>
+          </div>
+          <div ng-if="self.input.length > 0" layout="row" layout-align="space-between center" style="padding:0.5em;padding-top:0;padding-right: 0;padding-left:0;user-select:none;-webkit-user-select:none">
+            <md-button ng-if="!self.isManualMode" style="margin:0;text-transform: none;" ng-click="self.isGenerating && !self.isSingleGenerating ? self.pauseGenerating() : self.startGenerating()"><ng-md-icon icon="{{self.isGenerating ? (self.isSingleGenerating ? 'play_arrow' : 'pause') : 'android'}}"></ng-md-icon> 
+              <span ng-if="self.isGenerating && self.isSingleGenerating">{{'NEXT' | trans}}</span>
+              <span ng-if="!self.isGenerating && !self.isSingleGenerating">{{'AUTOCONTINUE' | trans}}</span>
+              <span ng-if="self.isGenerating && !self.isSingleGenerating">{{'PAUSE' | trans}}</span>
+            </md-button>
+
+            <md-button ng-if="!self.isManualMode && self.isGenerating" ng-class="{'md-raised md-warn':self.isSingleGenerating}" ng-click="self.isSingleGenerating = !self.isSingleGenerating; self.isFastGenerating = false;" aria-label="Einzelschritt" style="min-width:2em;margin:0;text-transform: none;"><ng-md-icon icon="skip_next"></ng-md-icon><md-tooltip md-direction="bottom">{{'SINGLESTEP' | trans}}</md-tooltip></md-button>              
+
+            <md-button ng-if="!self.isManualMode && self.isGenerating" ng-class="{'md-raised md-warn':self.isFastGenerating}" style="min-width:2em;margin:0;text-transform: none;" ng-click="self.isFastGenerating = !self.isFastGenerating; self.isSingleGenerating = false; self.singleSteps = 0;"><ng-md-icon icon="fast_forward"></ng-md-icon> 
+              <md-tooltip md-direction="bottom">{{'FASTER' | trans}}</md-tooltip>
+            </md-button>
+
+            <span flex></span>
+
+            <md-button ng-if="!self.isManualMode" ng-click="self.pauseGenerating();self.isManualMode = !self.isManualMode" style="margin:0;text-transform: none;"><ng-md-icon icon="face"></ng-md-icon> {{'SELECTMANUAL' | trans}}</md-button>              
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+      
+    <div ng-class="{'hideInside':!self.showInsideButton}" class="mainPanel" layout="row">
+
+      <div layout="column" style="z-index:11;background:#fff0f0">
+        <div class="seeInside" ng-click="self.showInsideButton = !self.showInsideButton" ng-class="{'leftSide':!self.showInsideButton}"></div>
+        
+        <md-toolbar class="md-hue-2" style="background:#d33737; height:64px;padding:12px">
+          <span layout="row" style="position:absolute;width:318px">
+          
+            <span flex style="line-height:40px;white-space:nowrap">{{'SUGESSTIONS' | trans}}</span>
+
+            <md-button class="documentsButton" style="min-width:1em;margin:0;height:38px;margin-right: 8px;" ng-style="{'background':self.useSynonyms ? '':'rgba(0,0,0,0.05)'}" ng-class="{'md-raised':!self.useSynonyms, 'md-sunk':self.useSynonyms}" ng-click="self.setUseSynonyms(!self.useSynonyms)"><md-tooltip md-direction="bottom">{{'USESYNONYMS' | trans}}</md-tooltip><ng-md-icon style="fill:white;" class="rotate270" icon="usb"></ng-md-icon></md-button>
+
+            <md-button class="documentsButton" style="min-width:1em;margin:0;height:38px;margin-right: 8px;" ng-style="{'background':self.useDistance ? '':'rgba(0,0,0,0.05)'}" ng-class="{'md-raised':!self.useDistance, 'md-sunk':self.useDistance}" ng-click="self.setUseDistance(!self.useDistance)"><md-tooltip md-direction="bottom">{{'INCLUDESIMILARWORDS' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="select_all"></ng-md-icon></md-button>
+
+            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:38px" ng-click="self.setMatchingSort(self.matchingSort == 'alpha' ? 'value':'alpha')"><md-tooltip md-direction="bottom">{{'ORDERLIST' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="sort_by_alpha" ng-if="self.matchingSort == 'alpha'"></ng-md-icon><ng-md-icon style="fill:white" icon="sort" ng-if="self.matchingSort == 'value'"></ng-md-icon></md-button>
+                      
+          </span>
+
+        </md-toolbar>
+
+        <div layout-align="center center" layout="column" style="background:#fff0f0;width: 52px;height:calc(100vh - 64px);">
+          <md-button aria-label="N-Gramme wählen" id="selectBtn" ng-click="self.showTempSettings($event)"  class="md-raised documentsButton pulse"  style="overflow:visible;color:white;background:#f15757;min-width:1em;width:2em;height:18em;margin:0;margin-left: 8px;">
+           
+            <div style="position: absolute;left: -10px;border: 8px solid #f15757;border-left: 0;border-top: 70px solid transparent;border-bottom: 70px solid transparent;height: 0px;top: 50%;margin-top: -70px;"></div>
+
+            <div style="position:absolute;transform:rotate(-90deg);width: 15em;text-align: center;transform-origin: left center;bottom: 0;left: 0;margin-left: 1em;text-transform: none;">
+              {{'EDITSUGGESTIONS' | trans}}</div>
+          </md-button>
+        </div>
+
+      </div>
+
+                      
+      <div layout="column" style="width: 276px; flex-shrink: 0; z-index: 10;position:relative"  md-component-id="right" md-is-locked-open="$mdMedia('gt-xs') ||self.sideNavStayOpen">
+
+        <md-toolbar style="background:#d33737;height:64px;padding:12px;padding-left:0" class="md-hue-2 ">
+
+        </md-toolbar>
+
+        <md-list md-virtual-repeat-container id="indexList" flex md-top-index="self.indexMatchingTop" style="padding:0;overflow-y:hidden; overflow-x: hidden;background:#fff0f0" >
+          <md-list-item class="md-2-line" style="margin-left:-24px;" md-virtual-repeat="item in self.sortedMatching" md-on-demand>
+            <div class="md-list-item-text" layout="column">                        
+              <div style="position:relative;padding-left:1em;margin-top: 10px;margin-bottom: 10px;" ng-class="{'selected':self.isSelected(item), 'picked':self.pickedNextWord == item}">
+                <h3 style="white-space: normal;" layout="row" layout-align="start center">
+                  <span style="background: #f3a000;color:white; padding: 0.2em; display: inline-block;font-weight: 400; font-size: 14px; border-radius: 4px;">{{item.n}}er</span>
+                  <span style="margin-left: 0.25em;" ng-bind-html="self.getTokenString(item)">
+                  </span>
+                </h3>
+                <md-progress-linear style="margin-left:30px;height:3px; overflow:hidden" class="md-accent" md-mode="determinate" ng-value="item.percent"></md-progress-linear>
+              </div>
+
+              <md-menu class="md-secondary">                            
+                <md-button class="md-icon-button" style="min-width: 0; width: 0;padding: 0;margin: 0;" aria-label="more" ng-click="$mdMenu.open($event)">
+
+                </md-button>
+                <md-menu-content width="3" >
+                  <md-menu-item layout="column" style="height: auto;padding-bottom:6px">
+                    <div style="padding-left:16px;margin-bottom:4px"><b>{{item.text}}</b></div>
+
+                    <div style="padding-left:16px;margin-bottom:4px;margin-top:4px">
+                    {{'FOUNDTIMES' | trans:item.totalCount}}.</div>
+                    <div ng-repeat="(key, value) in item.refs track by key" style="font-size:80%">
+
+                      {{value}}{{'TIMESIN' | trans}} <b>{{'DOCUMENT' | trans}} {{key+ (!$last?', ':'')}}</b>
+                    </div>
+                    <div ng-if="item.n > 1 && self.useDistance && item.distance != 1 && !item.synonym" style="font-size: 80%; margin-top: 1em;">
+                      {{'SIMILARITY' | trans}}: {{(item.distance*100).toFixed(0)}}%<br>
+                    </div>
+
+                    <div ng-if="item.n > 1 && self.useSynonyms && item.synonym" style="font-size: 80%; margin-top: 1em;">
+                      {{'SYNONYMS' | trans}}: {{item.synonym.join(', ')}}<br>
+                    </div>
+
+                  </md-menu-item>
+                
+                  <md-divider></md-divider>
+                                              
+                  <md-menu-item>
+                    <md-button ng-click="self.addNextWord({token:item.tokens[item.tokens.length-1], text:item.tokens[item.tokens.length-1], source:item.refs });">
+                      <ng-md-icon icon="playlist_play" style="top:10px"></ng-md-icon> <span style="vertical-align:middle;padding-left:8px"><b>{{item.tokens[item.tokens.length-1]}}</b> {{'INSERT' | trans}}</span>
+                    </md-button>
+                  </md-menu-item>
+                </md-menu-content>
+              </md-menu>
+            </div>  
+            <md-divider></md-divider>
+          </md-list-item>
+        </md-list>  
+
+      </div>
+
+      <div layout="column" class="md-whiteframe-z2" style="z-index:9;width: 16px; flex-shrink: 0;">
+
+        <md-toolbar class="md-hue-2" style="background:#d33737; height:64px;padding:12px;padding-left:0">
+        </md-toolbar>
+        <div layout-align="center center" layout="column" style="background:#fff0f0;height:calc(100vh - 64px);">
+         
+        </div>
+
+      </div>
+
+
+      <div layout="column" style="z-index:8;background:#fffef0">
+        
+        <md-toolbar class="md-hue-2" style="background:#ffa900; height:64px;padding:12px">
+          <span layout="row" style="position:absolute;width:318px">
+          
+            <span flex style="line-height:40px;white-space:nowrap">{{'NGRAMMS' | trans}}</span>
+
+            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:2em;margin:0;height:38px;margin-right: 8px;" ng-click="self.ngram = self.ngram - 1; self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()" ng-disabled="self.ngram <= 1" aria-label="-1"><ng-md-icon style="fill:white" icon="exposure_neg_1" ></ng-md-icon></md-button>
+
+            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:2em;margin:0;height:38px;margin-right: 8px;" ng-click="self.ngram = self.ngram + 1; self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()" ng-disabled="self.ngram >= 6" aria-label="+1"><ng-md-icon style="fill:white" icon="exposure_plus_1"></ng-md-icon></md-button>
+
+
+            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:38px" ng-click="self.setNgramSort(self.ngramSort == 'alpha' ? 'value':'alpha')"><md-tooltip md-direction="bottom">{{'ORDERLIST' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="sort_by_alpha" ng-if="self.ngramSort == 'alpha'"></ng-md-icon><ng-md-icon style="fill:white" icon="sort" ng-if="self.ngramSort == 'value'"></ng-md-icon></md-button>
+                      
+          </span>
+
+        </md-toolbar>
+      </div>
+
+      <div layout="column" layout-fill style="width:267px;flex-shrink:0;z-index: 2;">    
+
+        <md-toolbar style="background:#ffa900;height:64px;padding:12px;padding-left:0" class="md-hue-2 ">
+
+        </md-toolbar>
+        <div layout="row" layout-align="center center" layout-wrap style="background: #fffef0;margin-right: -1em">
+          <md-button ng-if="self.ngram > 0" ng-click="self.showngram = 1; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 1}" style="margin-left:0;min-width: 2em;    text-transform: none;">1er<md-tooltip>{{self.wordList[1].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 1" ng-click="self.showngram = 2; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 2}" style="margin-left:0;min-width: 2em;    text-transform: none;">2er<md-tooltip>{{self.wordList[2].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 2" ng-click="self.showngram = 3; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 3}" style="margin-left:0;min-width: 2em;    text-transform: none;">3er<md-tooltip>{{self.wordList[3].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 3" ng-click="self.showngram = 4; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 4}" style="margin-left:0;min-width: 2em;    text-transform: none;">4er<md-tooltip>{{self.wordList[4].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 4" ng-click="self.showngram = 5; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 5}" style="margin-left:0;min-width: 2em;    text-transform: none;">5er<md-tooltip>{{self.wordList[5].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 5" ng-click="self.showngram = 6; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 6}" style="margin-left:0;min-width: 2em;    text-transform: none;">6er<md-tooltip>{{self.wordList[6].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+
+        </div>
+        <md-list md-virtual-repeat-container id="nGramList" flex style="padding:0;overflow-y:hidden; overflow-x: hidden;background:#fffef0" >
+          <md-list-item class="md-2-line" style="padding-left:0" md-virtual-repeat="item in self.sortedNGrams" md-on-demand>
+            <div class="md-list-item-text" layout="column">                        
+              <div style="position:relative;margin-top: 10px;margin-bottom: 10px;">
+                <h3 style="white-space: normal;">{{item.text}}</h3>
+
+                <md-progress-linear style="height:3px; overflow:hidden" class="md-accent" md-mode="determinate" ng-value="item.percent"></md-progress-linear>
+              </div>
+
+              <md-menu class="md-secondary">                            
+                <md-button class="md-icon-button" style="min-width: 0; width: 0;padding: 0;margin: 0;" aria-label="more" ng-click="$mdMenu.open($event)">
+
+                </md-button>
+                <md-menu-content width="3" >
+                  <md-menu-item layout="column" style="height: auto;padding-bottom:6px">
+                    <div style="padding-left:16px;margin-bottom:4px"><b>{{item.text}}</b></div>
+
+                    <div style="padding-left:16px;margin-bottom:4px;margin-top:4px">{{item.totalCount}} x gefunden.</div>
+                    <div ng-repeat="(key,value) in item.refs track by key" style="font-size:80%">
+                      {{value}}{{'TIMESIN' | trans}} <b>{{'DOCUMENT' | trans}} {{key+ (!$last?', ':'')}}</b>
+                    </div>
+                  </md-menu-item>
+                
+                  <md-divider></md-divider>
+                                              
+                  <md-menu-item>
+                    <md-button ng-click="self.addNextWords(item);">
+                      <ng-md-icon icon="playlist_play" style="top:10px"></ng-md-icon> <span style="vertical-align:middle;padding-left:8px">{{'INSERTINPUT' | trans}}</span>
+                    </md-button>
+                  </md-menu-item>
+                </md-menu-content>
+              </md-menu>
+
+            </div>  
+            <md-divider></md-divider>
+          </md-list-item>
+        </md-list>  
+
+      </div>
+
+      <div layout="column" class="md-whiteframe-z2" style="z-index:1;background: #fffef0;width: 52px; flex-shrink: 0;">
+
+        <md-toolbar class="md-hue-2" style="background:#ffa900; height:64px;padding:12px;padding-left:0">
+        </md-toolbar>
+
+        <div layout-align="center center" layout="column" style="background:#fffef0;height:calc(100vh - 64px);">
+          <md-button aria-label="Modell aufbauen" id="rebuildBtn" ng-click="self.rebuildNGrams(true)"  class="md-raised documentsButton pulse" style="overflow:visible;color:white;background:#f15757;min-width:1em;width:2em;height:18em;margin:0;">
+            
+            <div style="position: absolute;left: -10px;border: 8px solid #f15757;border-left: 0;border-top: 70px solid transparent;border-bottom: 70px solid transparent;height: 0px;top: 50%;margin-top: -70px;"></div>
+
+            <div style="position:absolute;transform:rotate(-90deg);width: 15em;text-align: center;transform-origin: left center;bottom: 0;left: 0;margin-left: 1em;text-transform: none;">
+              {{'BUILDNGRAMMS' | trans}}</div>
+          </md-button>
+        </div>
+
+      </div>   
+
+      <div layout="column" layout-fill style="min-width:320px; max-width: 100vw;flex-shrink: 0; flex-grow: 1;width: 520px;">    
+        <md-toolbar class="md-hue-2" style="background:#17b691; height:64px;padding:12px">
+          <span layout="row" >
+            <span flex style="line-height:40px;white-space:nowrap">{{'DOCUMENTS' | trans}}: {{self.documents.length}}</span>
+
+              <md-button id="newDocBtn" aria-label="Dokument hinzufügen" ng-click="self.newDocument($event)" class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:40px;margin-right:8px">
+                <md-tooltip md-direction="bottom">{{'ADDDOCUMENTHINT' | trans}}</md-tooltip>
+                <ng-md-icon style="fill:white" icon="add"></ng-md-icon>
+                <ng-md-icon style="fill:white" icon="description"></ng-md-icon>
+              </md-button>
+
+              <md-fab-speed-dial md-direction="down" class="md-fab-bottom md-scale" ng-if="!self.currentCoCollection">
+                <md-fab-trigger style="margin-right:8px">
+                  <md-button id="useDocBtn" class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:40px" aria-label="Kollektion laden">
+                    <md-tooltip md-direction="bottom">{{'COLLECTIONSHINT' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="style"></ng-md-icon>
+                  </md-button>
+                </md-fab-trigger>
+
+                <md-fab-actions style="position:absolute;top:16px">
+
+                  <md-button aria-label="Märchen" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default',$event)" style="background:#17b691;margin-top:42px">
+                    <md-tooltip md-direction="left">{{'FAIRYTALES' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="book"></ng-md-icon>
+                  </md-button>
+
+                  <md-button aria-label="Fairy tales" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default2',$event)" style="background:#17b691">
+                    <md-tooltip md-direction="left">{{'FAIRYTALESOTHERLANG' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="wb_irradescent"></ng-md-icon>
+                  </md-button>
+                  
+                  <md-button aria-label="Wettervorhersage" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default3',$event)" style="background:#17b691">
+                    <md-tooltip md-direction="left">{{'WEATHER' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="cloud_circle"></ng-md-icon>
+                  </md-button>
+
+                  <md-button aria-label="ABCMusik" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default4',$event)" style="background:#17b691;">
+                    <md-tooltip md-direction="left">{{'MUSICABC' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="queue_music"></ng-md-icon>
+                  </md-button>
+
+                  <md-button aria-label="Affen" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default5',$event)" style="background:#17b691;">
+                    <md-tooltip md-direction="left">{{'INTELLIGENTAPES' | trans}}</md-tooltip>
+                    <ng-md-icon class="rotate45" style="fill:white" icon="pets"></ng-md-icon>
+                  </md-button>
+          
+                </md-fab-actions>
+              </md-fab-speed-dial>
+
+              <md-menu>
+                <md-button class="md-raised documentsButton" ng-click="$mdMenu.open($event)" aria-label="Einstellungen" style="text-transform: none; background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:40px">
+                  <ng-md-icon style="fill:white" icon="menu"></ng-md-icon>
+                </md-button>
+                <md-menu-content>
+                  <md-menu-item ng-if="!self.currentCoCollection">
+                    <md-button ng-click="self.loadPredefined('Neu',$event)" style="text-transform:none">
+                      <ng-md-icon style="fill:black" icon="delete_sweep"></ng-md-icon> {{'DELETECOLLECTION' | trans}}
+                    </md-button>
+                  </md-menu-item>
+                  <md-menu-item ng-if="self.currentCoCollection">
+                    <md-button ng-click="self.showCoCollectionCode($event)" style="text-transform:none">
+                      <ng-md-icon style="fill:black" icon="group"></ng-md-icon> {{'COCOLLECTION' | trans}}: <b style="text-transform:uppercase;">{{self.currentCoCollection}} </b>
+                    </md-button>
+                  </md-menu-item>
+
+                  <md-menu-item>
+                    <md-button ng-click="self.saveCollection($event)" style="text-transform:none">
+                      <ng-md-icon style="fill:black" icon="get_app"></ng-md-icon> {{'DOWNLOADCOLLECTION' | trans}}
+                    </md-button>
+                  </md-menu-item>
+                  <md-menu-item ng-if="!self.currentCoCollection">
+                    <md-button ng-click="void(0)" style="text-transform:none">
+                      <input id="uploadCollection" type="file" onchange="angular.element(this).scope().self.loadCollection(this)" accept=".json,application/json,application/JSON" style="position: absolute;display: block !important;width: 100% !important;height: 100% !important;opacity: 0 !important;overflow: hidden !important;z-index: 100 !important;left: 0px;top: 0px;cursor: pointer !important;">                      
+                      <ng-md-icon style="fill:black" icon="open_in_browser"></ng-md-icon> {{'UPLOADCOLLECTION' | trans}}
+                    </md-button>
+                  </md-menu-item>
+
+                  <md-menu-divider ng-if="!self.currentCoCollection"></md-menu-divider>
+
+                  <md-menu-item ng-if="!self.currentCoCollection">
+                    <md-button ng-click="self.createCoCollection($event)" style="text-transform:none">
+                      <ng-md-icon style="fill:black" icon="create_new_folder"></ng-md-icon> {{'CREATECOCOLLECTION' | trans}}
+                    </md-button>
+                  </md-menu-item>
+                  <md-menu-item ng-if="!self.currentCoCollection">
+                    <md-button ng-click="self.joinCoCollection($event)" style="text-transform:none">
+                      <ng-md-icon style="fill:black" icon="folder_shared"></ng-md-icon> {{'JOINCOCOLLECTION' | trans}}
+                    </md-button>
+                  </md-menu-item>
+
+                </md-menu-content>
+              </md-menu>
+
+          </span>
+        </md-toolbar>
+
+        <md-content flex md-scroll-y layout-padding style="background:#e6f0ed">
+          <div layout-padding>
+            <md-card layout="column" class="documentCard {{self.showSource ? 'document_'+d.id :''}}" ng-style="{'border-color': d.isFound ? '#fff5a1' : 'transparent'}" ng-repeat="d in self.documents" style="position:relative">
+
+              <div ng-if="d.crawling" style="position:absolute; left:50%; top:50%; margin-left:-28px; margin-top:-28px; z-index:2">
+                <md-button class="md-fab fa-spin pulse" style="background:rgb(241, 87, 87)" style="margin:0" aria-label="crawling">
+                  <ng-md-icon style="fill:white" icon="bug_report" ></ng-md-icon>
+                </md-button>              
+              </div>            
+          
+              <div style="font-weight:bold;" layout="row"><span flex>{{'DOCUMENT' | trans}} {{d.id}}</span> 
+                <md-button aria-label="Edit" class="md-icon-button" style="margin: 0;margin-top: -10px;margin-right: -10px;" ng-click="self.editDocument($event,d)" ><ng-md-icon style="top:0px;fill:black" icon="edit"></ng-md-icon></md-button>
+                <md-button aria-label="Löschen" class="md-icon-button" style="margin: 0;margin-top: -10px;margin-right: -10px;" ng-click="self.removeDocument(d);$event.stopPropagation()"><ng-md-icon style="top:0px;fill:black" icon="delete_forever"></ng-md-icon></md-button>
+              </div>
+
+              <div flex style="overflow:hidden;font-size:70%" ng-bind-html="d.content">
+              </div>
+
+              <div ng-if="!self.firstPrompt && self.documentContext && self.documentContext[d.id]" ng-click="clicked = !clicked">
+                <md-progress-linear style="height:8px; overflow:hidden; margin-top: 8px" class="md-accent" md-mode="determinate" ng-value="self.documentContext[d.id]"></md-progress-linear>
+                <md-tooltip md-autohide md-visible="clicked">{{'DOCUMENTCONTEXT' | trans:(self.documentContext[d.id] == 1 ? 0 : self.documentContext[d.id])+'%'}}<br>{{self.getDocumentContextString(d.id)}}</md-tooltip>
+              </div>
+            
+            </md-card>          
+            <div style="clear:both;height:2em"></div>
+          </div>
+        </md-content>
+      </div>
+    </div>
+                   
+    
+<script type="text/ng-template" id="edit.html">
+<md-dialog aria-label="Edit Document" style="min-width: 50%;max-width:80%;width:600px">
+  <form>
+    <md-dialog-content>
+      <div class="md-dialog-content"  style="padding-bottom: 0;">
+        <h4 style="margin-top:0;padding:2px">{{'DOCUMENT' | trans}} {{id}}</h4>
+        <md-input-container class="md-block">
+          <label>{{'INPUTTEXTHERE' | trans}}:</label>
+          <textarea ng-model="text" md-maxlength="20000" maxlength="20000" rows="5" md-select-on-focus></textarea>
+        </md-input-container>
+      </div>
+    </md-dialog-content>
+
+    <md-dialog-actions layout="row">
+      <md-button ng-click="cancel()">{{'CANCEL' | trans}}</md-button>
+      <md-button ng-click="save()" class="md-primary">{{'SAVE' | trans}}</md-button>
+    </md-dialog-actions>
+  </form>
+</md-dialog>
+</script> 
+
+<script type="text/ng-template" id="cocollectioncode.html">
+<md-dialog aria-label="CoCollection Code" style="max-width:80%;width:300px">
+  <md-dialog-content>
+    <div class="md-dialog-content"  style="padding-bottom: 0;">
+      <h4 style="margin-top:0;padding:2px">{{'COCOLLECTION' | trans}}</h4>
+      <p style="padding:3px">{{'COCOLLECTIONCREATED' | trans}}</p>
+      <md-input-container class="md-block" style="margin-bottom:0;margin-top:2em">
+        <label>{{'COCOLLECTIONCODE' | trans}}:</label>
+        <input ng-model="code" ng-readonly="true" md-select-on-focus>
+      </md-input-container>
+    </div>
+  </md-dialog-content>
+
+  <md-dialog-actions layout="row">
+    <md-button ng-click="ok()" class="md-primary">{{'OK' | trans}}</md-button>
+  </md-dialog-actions>
+</md-dialog>
+</script> 
+
+<script type="text/ng-template" id="editTempSettings.html">
+<md-dialog aria-label="Index Settings" style="max-width:80%;width:650px">
+    <md-dialog-content style="padding:24px">
+      <ng-md-icon ng-click="cancel()" style="cursor:pointer;outline:none;float:right;fill:black" icon="close"></ng-md-icon>
+          <p><b>{{'NUMBEROFSUGGESTIONS' | trans}}</b></p>
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 1}" ng-click="self.maxNext = 1; self.getNextWords()">1</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 3}" ng-click="self.maxNext = 3; self.getNextWords()">3</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 5}" ng-click="self.maxNext = 5; self.getNextWords()">5</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 8}" ng-click="self.maxNext = 8; self.getNextWords()">8</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 12}" ng-click="self.maxNext = 12; self.getNextWords()">12</md-button>
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 15}" ng-click="self.maxNext = 15; self.getNextWords()">15</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 20}" ng-click="self.maxNext = 20; self.getNextWords()">20</md-button> 
+            <md-button style="min-width:2em;margin:0;box-shadow: 0 2px 5px 0 rgb(0 0 0 / 26%);" class="md-warn" ng-class="{'md-primary md-raised':self.maxNext == 30}" ng-click="self.maxNext = 30; self.getNextWords()">30</md-button>
+          <p>
+            {{'NUMBEROFSUGGESTIONSDESC' | trans:self.maxNext}}
+          </p>
+          <p style="margin-top:2em"><b>{{'TEMPERATURE' | trans}}</b></p>
+
+          <div layout="column">
+            <md-slider-container style="margin-top:-0.5em;margin-bottom:-0.5em">
+              <md-slider min="0" max="100" ng-model="self.temp" ng-change="self.getNextWords()" aria-label="Temperatur" class="md-warn">
+            </md-slider-container>       
+          </div>  
+
+          <div layout="row" layout-align="space-between center" style="user-select:none;-webkit-user-select:none;margin-left: 0.2em; margin-right: 0.2em; font-size: 80%; margin-top: -0.5em;">
+            <span>{{'LOW' | trans}}</span>
+            <span>{{self.temp}}</span>
+            <span>{{'HIGH' | trans}}</span>
+          </div>
+          <p>
+            {{'TEMPERATUREDESC' | trans}}
+          </p>
+
+<!--
+          <p style="margin-top:2em"><b>{{'CONTEXT' | trans}}</b></p>
+          <div layout="column">
+            <md-slider-container style="margin-top:-0.5em;margin-bottom:-0.5em">
+              <md-slider step="0.05" min="0" max="5.0" ng-model="self.context" ng-change="self.getNextWords()" aria-label="Context" class="md-warn">
+            </md-slider-container>       
+          </div>  
+          <div layout="row" layout-align="space-between center" style="user-select:none;-webkit-user-select:none;margin-left: 0.2em; margin-right: 0.2em; font-size: 80%; margin-top: -0.5em;">
+            <span>{{'LOW' | trans}}</span>
+            <span>{{self.context}}</span>
+            <span>{{'HIGH' | trans}}</span>
+          </div>
+          <p>
+            {{'CONTEXTDESC' | trans}}            
+          </p>
+          
+          <p style="margin-top:2em"><b>n-Gramm-Gewicht</b></p>
+          <div layout="column">
+            <md-slider-container style="margin-top:-0.5em;margin-bottom:-0.5em">
+              <md-slider step="0.05" min="0" max="5.0" ng-model="self.nWeight" ng-change="self.getNextWords()" aria-label="Context" class="md-warn">
+            </md-slider-container>       
+          </div>  
+          <div layout="row" layout-align="space-between center" style="user-select:none;-webkit-user-select:none;margin-left: 0.2em; margin-right: 0.2em; font-size: 80%; margin-top: -0.5em;">
+            <span>{{'LOW' | trans}}</span>
+            <span>{{self.nWeight}}</span>
+            <span>{{'HIGH' | trans}}</span>
+          </div>
+          <p>
+            Stell ein, wie stark das n eines n-Gramms bei der Wahl des nächsten Worts gewichtet werden soll.
+          </p>
+-->
+    </md-dialog-content>
+</md-dialog>
+</script> 
+
+<script type="text/ng-template" id="joinCoCollection.html">
+<md-dialog aria-label="Join CoCollection" style="max-width:80%;width:300px">
+  <md-dialog-content style="padding:16px;padding-bottom:0">
+    <p>{{'JOINCOCOLLECTIONHINT' | trans}}</p>
+    <md-input-container md-no-float class="md-block" style="margin:0;margin-top:1em">
+      <input ng-style="{'color':failed ? 'red':''}" ng-keydown="failed = false" placeholder="{{'JOINCOCOLLECTIONCODE' | trans}}" style="text-transform:uppercase" ng-model="code" md-select-on-focus/>
+    </md-input-container>
+
+  </md-dialog-content>
+  <md-dialog-actions layout="row">
+    <md-button ng-click="cancel()">{{'CANCEL' | trans}}</md-button>
+    <md-button class="md-primary" ng-click="join()">{{'JOIN' | trans}}</md-button>
+  </md-dialog-actions>
+</md-dialog>
+</script> 
+
+<script type="text/ng-template" id="abcMusicPlayer.html">
+<md-dialog aria-label="ABC Music Player" style="min-width: 50%;max-width:80%;width:800px">
+  <md-dialog-content style="padding:16px">
+    <ng-md-icon ng-click="cancel()" style="cursor:pointer;outline:none;float:right;fill:black" icon="close"></ng-md-icon>
+    <div id="abcPlayerPaper"></div>
+    <div id="abcPlayerAudio"></div>
+  </md-dialog-content>
+</md-dialog>
+</script> 
+
+<script type="text/ng-template" id="testBench.html">
+<md-dialog aria-label="Test Bench" style="min-width: 50%;max-width:80%;width:600px">
+  <md-dialog-content style="padding:16px">
+
+    <div ng-repeat="c in cases track by $index" style="background:#f3f3f3; padding:16px;margin-bottom:16px;border-radius:8px" layout="row" layout-align="space-between start">
+      <div>
+      <b>{{c.name}}</b><br>
+      Dokumente: {{c.docs.length}}<br>
+      Prompt:{{c.prompt}}<br>
+      </div>
+      <div>
+        <md-button ng-click="load(c)" class="md-primary md-raised" style="text-transform:none;margin:0;margin-top:1em">Laden</md-button>
+        <md-button ng-click="delete(c)" class="md-primary md-raised" style="text-transform:none;margin:0;margin-top:1em;min-width:1em">
+          <ng-md-icon style="fill:white" icon="delete_forever"></ng-md-icon>
+        </md-button>
+    </div>
+    </div>
+
+    <md-button ng-click="create()" class="md-primary md-raised" style="text-transform:none">Testfall mit den aktuellen Dokumenten und Prompt erstellen</md-button>
+
+  </md-dialog-content>
+
+  <md-dialog-actions layout="row">
+    <md-button ng-click="cancel()">{{'CANCEL' | trans}}</md-button>
+  </md-dialog-actions>
+</md-dialog>
+</script> 
+
+<style>
+.input:after{
+  content:" ";
+  display: inline-block;
+}
+.input.nextMark:after{
+  content:"";
+  display: none;  
+}
+.input.mark {
+  padding-left: 0 !important;
+}
+.input.newline {
+  display:block !important;
+  background:transparent !important;
+  padding: 0 !important;
+  height: 12px;
+}
+
+.ngram0 {
+  background:#ddd;
+  background:#a5e5d1;
+  color:black;
+}
+.ngram1 {
+  background:#a5e5d1;
+  color:black;
+}
+.ngram2 {
+  background:#5ed6b0;
+  color:black;
+}
+.ngram3 {
+  background:#16cf94;
+  color:black;
+}
+.ngram4 {
+  background:#198664;
+  color:white;
+}
+.ngram5 {
+  background:#006848;
+  color:white;
+}
+.ngram6 {
+  background:#033a29;
+  color:white;
+}
+md-menu-item > * {
+  box-sizing: border-box;
+}
+
+md-tooltip {
+  height: auto !important;
+  white-space:initial !important;
+  line-height:1.5em !important;
+  padding-top:0.5em;
+  padding-bottom:0.5em;
+  max-width:200px;
+}
+
+
+.smallSVG {
+  height: 1.5em;
+  vertical-align: middle;
+  vertical-align:-webkit-baseline-middle; 
+  top:-5px;
+  display: inline-block;
+}
+.smallSVG svg{
+  top:-5px;
+  transform: scale(0.75);
+}
+.md-toolbar-tools{
+  height:64px;
+  max-height:64px;
+}
+md-toolbar {
+  flex-shrink: 0;
+}
+ 
+.documentCard {
+  float:left; 
+  margin:16px; 
+  padding:16px;
+  width:210px; 
+  height:290px; 
+  background:white;
+  border:2px solid transparent;
+  outline:0;
+}
+.searchNumber {
+  position: absolute;
+  left: -15px;
+  top: 2px;
+  background: #f15757;
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  line-height: 32px;
+  color: white;
+  outline:none;
+  z-index:1;
+}
+
+.inputPanel md-progress-linear.md-accent .md-container {
+  background-color: #fff0f0;
+}
+.inputPanel md-progress-linear.md-accent .md-bar {
+  background-color: #f15757;
+}
+
+
+.rotate270 svg {
+  transform:rotate(270deg);
+}
+.rotate45 svg {
+  transform:rotate(45deg);
+}
+
+md-chips-wrap {
+  padding:16px !important; 
+}
+.stopword{ 
+ text-decoration: line-through;
+}
+.documentCard span{
+    -moz-transition: color 0.1s ease-in;
+    /* WebKit */
+    -webkit-transition: color 0.1s ease-in;
+    /* Opera */
+    -o-transition: color 0.1s ease-in;
+    /* Standard */
+    transition: color 0.1s ease-in;  
+}
+.fadeIn {
+    -moz-transition: all 0.5s ease-in;
+    /* WebKit */
+    -webkit-transition: all 0.5s ease-in;
+    /* Opera */
+    -o-transition: all 0.5s ease-in;
+    /* Standard */
+    transition: all 0.5s ease-in;  
+  opacity:0;
+  pointer-events:none;
+}
+.fadeIn.show {
+  opacity:1;
+  display:block;
+  pointer-events:all;
+}
+
+.hideUnselected {
+    -moz-transition: all 0.5s ease-in;
+    /* WebKit */
+    -webkit-transition: all 0.5s ease-in;
+    /* Opera */
+    -o-transition: all 0.5s ease-in;
+    /* Standard */
+    transition: all 0.5s ease-in;  
+  opacity:0;
+  transition-delay: 250ms;
+}
+div:hover > .hideUnselected,
+div:focus > .hideUnselected{
+  opacity:1;
+  display:block;
+  pointer-events:all;
+}
+
+.crawling {
+  color:rgb(255,64,129);
+}
+.highlightIndexYellow{
+  background:rgba(255,255,0,0.4);
+}
+.highlightIndexRed{
+  background:rgba(255,0,0,0.3);
+}
+.highlightIndexPurple {
+  background:rgba(0, 43, 255, 0.2);
+}
+
+.highlightSearch{
+  background:rgba(255,255,0,0.4);
+}
+.highlightSearchPartial{
+  background:rgba(0, 43, 255, 0.2);
+}
+.documentsButton:hover{
+  background:rgb(255, 27, 27) !important;
+}
+
+.md-sunk {
+  box-shadow: 4px 4px 4px 0 rgba(0, 0, 0, 0.5) inset;
+  border-radius: 4px;
+  background: rgb(242 65 65) !important;
+  color:white;
+}
+.md-sunk > ng-md-icon {
+  top:8px;
+  left:1px;
+}
+.md-button {
+  border-radius:4px;
+}
+md-menu-item{
+  flex-shrink: 0;  
+}
+md-sidenav {
+  fill: #737373;
+}
+md-list-item.md-2-line, md-list-item.md-2-line > .md-no-style {
+    min-height: 42px;
+}
+md-list-item.md-2-line:before, md-list-item.md-2-line > .md-no-style:before {
+    min-height: 42px;
+}
+ng-md-icon {
+  position: relative;
+  top: 7px; // adjust for svg viewbox
+}
+.md-subheader {
+  font-size:100% !important;
+  background:rgb(63,81,181);
+  color:white;
+}
+.fa-spin {
+  -webkit-animation: fa-spin 1s infinite linear;
+  animation: fa-spin 1s infinite linear;
+}
+@-webkit-keyframes fa-spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+@keyframes fa-spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(359deg);
+    transform: rotate(359deg);
+  }
+}
+.pulse {
+  -webkit-animation: pulse 1s infinite linear;
+  animation: pulse 1s infinite linear;
+}
+.pulseOnce {
+  -webkit-animation: pulse 1s linear;
+  animation: pulse 1s linear;
+}
+
+@-webkit-keyframes pulse {
+  0% {
+    -webkit-box-shadow: 0 0 0 0 rgba(255,64,129, 0.4);
+  }
+  70% {
+      -webkit-box-shadow: 0 0 0 10px rgba(255,64,129, 0);
+  }
+  100% {
+      -webkit-box-shadow: 0 0 0 0 rgba(255,64,129, 0);
+  }
+}
+@keyframes pulse {
+  0% {
+    -moz-box-shadow: 0 0 0 0 rgba(255,64,129, 0.4);
+    box-shadow: 0 0 0 0 rgba(255,64,129, 0.4);
+  }
+  70% {
+      -moz-box-shadow: 0 0 0 10px rgba(255,64,129, 0);
+      box-shadow: 0 0 0 10px rgba(255,64,129, 0);
+  }
+  100% {
+      -moz-box-shadow: 0 0 0 0 rgba(255,64,129, 0);
+      box-shadow: 0 0 0 0 rgba(255,64,129, 0);
+  }
+}
+
+@-webkit-keyframes pulseBorder {
+  0% {
+    border-color: rgba(255,64,129, 0);
+  }
+  100% {
+    border-color: rgba(255,64,129, 0.4);
+  }
+}
+@keyframes pulseBorder {
+  0% {
+    border-color: rgba(255,64,129, 0);
+  }
+  100% {
+    border-color: rgba(255,64,129, 0.4);
+  }
+}
+
+md-icon svg {
+  fill: inherit;
+}
+
+md-backdrop{ height: 100% !important; }
+
+.introjs-tooltiptext{
+  padding:16px;
+}
+.introjs-tooltip {
+  min-width:280px;
+}
+md-sidenav.md-closed.md-locked-open-add-active {
+    width: 320px !important;
+    min-width: 320px !important;
+}
+.inputPanel{
+  position: relative;
+  width:460px;
+  max-width: 100vw;
+  height:100%;
+  background:#eee;
+  background:#e0e4ff;
+  z-index:2;
+  transition:all 1s;
+  box-shadow:2px 2px 5px rgba(0,0,0,0.2);
+  overflow:auto;
+  flex-shrink: 0;
+}
+.inputPanel.hideInside{
+  width:calc(100vw - 48px);
+  transform:translateX(0);
+}
+.seeInside {
+  position:absolute;
+  top:0;
+  height:100%;
+  left:0px;
+  width:64px;
+  background:rgba(224, 228, 255, 0.56);
+  z-index:3;
+  transition:all 1s;
+  outline:none;
+  cursor:pointer;
+}
+.seeInside:hover {
+  background:rgba(255, 255, 255, 0.6);
+}
+.seeInside.leftSide {
+  width:0;
+}
+.mainPanel{
+  position: relative;
+  height:100%;
+  background:#eee;
+  z-index:1;
+  transition:all 1s;
+  min-width: calc(100% - 460px);
+}
+.mainPanel.hideInside{
+  transform:translateX(0);
+}
+.searchField {
+  background:white;
+  border-radius:10vw;
+  padding:16px;
+  padding-top:8px;
+  padding-bottom:8px;
+  width:100%;
+  max-width:600px;
+  margin-left:auto;
+  margin-right:auto;
+  border: 2px solid #aaa;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+.indexSettings {
+  height: 0px;
+  overflow: hidden;
+  transition:height 1s;
+  flex-grow: 0;
+  flex-shrink: 0;
+}  
+.indexSettings.openSettings{
+  height:auto;
+}
+.searchResult {
+  flex-grow: 0;
+  flex-shrink: 0;
+  position:relative;
+  text-align:left;
+  width:100%;
+  max-width:600px;
+  margin-bottom:1em;
+  margin-left:auto;
+  margin-right:auto;
+  outline:none;
+  cursor:pointer;
+  box-sizing:border-box;
+    -moz-transition: padding 0.1s ease-in;
+    /* WebKit */
+    -webkit-transition: padding 0.1s ease-in;
+    /* Opera */
+    -o-transition: padding 0.1s ease-in;
+    /* Standard */
+    transition: padding 0.1s ease-in;    
+}
+.resultTitle {
+  font-weight:normal;
+  color:blue;
+  line-height:1.2em;
+  font-size:110%;
+}
+.resultTitle .highlightMatch {
+  font-weight:bold;
+}
+
+.resultURL {
+  color:green;
+}
+.resultSnippet {
+  font-weight:normal;
+  color:black;
+  line-height:1.2em;
+}
+.resultSnippet .highlightMatch {
+  font-weight:bold;
+}
+
+md-progress-linear.md-default-theme.md-accent .md-bar, md-progress-linear.md-accent .md-bar {
+    background-color: #17b691;
+}
+md-progress-linear.md-default-theme.md-accent .md-container, md-progress-linear.md-accent .md-container {
+    background-color: rgb(226 226 226);
+}
+
+.md-button.md-yellow.md-raised {
+    color:white;
+    background-color: rgb(243 160 0) !important;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+body.smallScreen .seeInsideBtn {
+  display:none;
+}
+.seeInsideBtn2 {
+  display:none;
+}
+body.smallScreen .seeInsideBtn2 {
+  display:block;
+}
+
+.selected{
+  background:#e0e4ff;
+}
+.picked:before{
+  content: " ";
+  position: absolute;
+  top:0;
+  left: 0;
+  width: 1em;
+  height: 100%;
+  background: #4757c5;
+}
+
+
+#wave {
+  position: relative;
+  text-align: center;
+  width: 2em;
+  height: 0px;
+}
+#wave .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #303131;
+  animation: wave 1.3s linear infinite;
+}
+#wave .dot:nth-child(2) {
+  animation-delay: -0.6s;
+}
+#wave .dot:nth-child(3) {
+  animation-delay: -0.4s;
+}
+
+@keyframes wave {
+  0%, 60%, 100% {
+    transform: initial;
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+.document_A {background: #FF000033 !important; }
+.document_B {background: #FFA50033 !important; }
+.document_C {background: #FFFF0033 !important; }
+.document_D {background: #00800033 !important; }
+.document_E {background: #0000FF33 !important; }
+.document_F {background: #4B008233 !important; }
+.document_G {background: #EE82EE33 !important; }
+.document_H {background: #80000033 !important; }
+.document_I {background: #FFC0CB33 !important; }
+.document_J {background: #FFD70033 !important; }
+.document_K {background: #80800033 !important; }
+.document_L {background: #00FF0033 !important; }
+.document_M {background: #00FFFF33 !important; }
+.document_N {background: #00008033 !important; }
+.document_O {background: #80008033 !important; }
+.document_P {background: #A52A2A33 !important; }
+.document_Q {background: #FF00FF33 !important; }
+.document_R {background: #00808033 !important; }
+.document_S {background: #FF149333 !important; }
+.document_T {background: #7CFC0033 !important; }
+.document_U {background: #DC143C33 !important; }
+.document_V {background: #00CED133 !important; }
+.document_W {background: #8B451333 !important; }
+.document_X {background: #40E0D033 !important; }
+.document_Y {background: #9932CC33 !important; }
+.document_Z {background: #FF634733 !important; }
+
+.document_AA {background: #FF000066 !important; }
+.document_AB {background: #FFA50066 !important; }
+.document_AC {background: #FFFF0066 !important; }
+.document_AD {background: #00800066 !important; }
+.document_AE {background: #0000FF66 !important; }
+.document_AF {background: #4B008266 !important; }
+.document_AG {background: #EE82EE66 !important; }
+.document_AH {background: #80000066 !important; }
+.document_AI {background: #FFC0CB66 !important; }
+.document_AJ {background: #FFD70066 !important; }
+.document_AK {background: #80800066 !important; }
+.document_AL {background: #00FF0066 !important; }
+.document_AM {background: #00FFFF66 !important; }
+.document_AN {background: #00008066 !important; }
+.document_AO {background: #80008066 !important; }
+.document_AP {background: #A52A2A66 !important; }
+.document_AQ {background: #FF00FF66 !important; }
+.document_AR {background: #00808066 !important; }
+.document_AS {background: #FF149366 !important; }
+.document_AT {background: #7CFC0066 !important; }
+.document_AU {background: #DC143C66 !important; }
+.document_AV {background: #00CED166 !important; }
+.document_AW {background: #8B451366 !important; }
+.document_AX {background: #40E0D066 !important; }
+.document_AY {background: #9932CC66 !important; }
+.document_AZ {background: #FF634766 !important; }
+
+.document_BA {background: #FF000099 !important; }
+.document_BB {background: #FFA50099 !important; }
+.document_BC {background: #FFFF0099 !important; }
+.document_BD {background: #00800099 !important; }
+.document_BE {background: #0000FF99 !important; }
+.document_BF {background: #4B008299 !important; }
+.document_BG {background: #EE82EE99 !important; }
+.document_BH {background: #80000099 !important; }
+.document_BI {background: #FFC0CB99 !important; }
+.document_BJ {background: #FFD70099 !important; }
+.document_BK {background: #80800099 !important; }
+.document_BL {background: #00FF0099 !important; }
+.document_BM {background: #00FFFF99 !important; }
+.document_BN {background: #00008099 !important; }
+.document_BO {background: #80008099 !important; }
+.document_BP {background: #A52A2A99 !important; }
+.document_BQ {background: #FF00FF99 !important; }
+.document_BR {background: #00808099 !important; }
+.document_BS {background: #FF149399 !important; }
+.document_BT {background: #7CFC0099 !important; }
+.document_BU {background: #DC143C99 !important; }
+.document_BV {background: #00CED199 !important; }
+.document_BW {background: #8B451399 !important; }
+.document_BX {background: #40E0D099 !important; }
+.document_BY {background: #9932CC99 !important; }
+.document_BZ {background: #FF634799 !important; }
+
+.document_CA {background: #FF0000CC !important; }
+.document_CB {background: #FFA500CC !important; }
+.document_CC {background: #FFFF00CC !important; }
+.document_CD {background: #008000CC !important; }
+.document_CE {background: #0000FFCC !important; }
+.document_CF {background: #4B0082CC !important; }
+.document_CG {background: #EE82EECC !important; }
+.document_CH {background: #800000CC !important; }
+.document_CI {background: #FFC0CBCC !important; }
+.document_CJ {background: #FFD700CC !important; }
+.document_CK {background: #808000CC !important; }
+.document_CL {background: #00FF00CC !important; }
+.document_CM {background: #00FFFFCC !important; }
+.document_CN {background: #000080CC !important; }
+.document_CO {background: #800080CC !important; }
+.document_CP {background: #A52A2ACC !important; }
+.document_CQ {background: #FF00FFCC !important; }
+.document_CR {background: #008080CC !important; }
+.document_CS {background: #FF1493CC !important; }
+.document_CT {background: #7CFC00CC !important; }
+.document_CU {background: #DC143CCC !important; }
+.document_CV {background: #00CED1CC !important; }
+.document_CW {background: #8B4513CC !important; }
+.document_CX {background: #40E0D0CC !important; }
+.document_CY {background: #9932CCCC !important; }
+.document_CZ {background: #FF6347CC !important; }
+
+</style>
+<script src="node_modules/angular/angular.js"></script> 
+<script src="node_modules/angular-aria/angular-aria.js"></script> 
+<script src="node_modules/angular-animate/angular-animate.js"></script> 
+<script src="node_modules/angular-material/angular-material.js"></script> 
+<script src="node_modules/angular-material-icons/angular-material-icons.js"></script> 
+<script src="node_modules/FileSaver/FileSaver.js"></script>
+<script src="node_modules/abcjs-basic-min.js"></script>
+<link rel="stylesheet" href="node_modules/abcjs-audio.css ">
+
+<script>
+ 
+var app = angular.module( 'eduSLMEngine', [ 'ngMaterial','ngMdIcons' ] );
+
+app.filter("trans", function($sce) {
+  var f = function(input, data, data2, data3) {
+    if(!app.translations[app.currentLanguage]){
+      // fetch i18n file
+      if(!app.translationsLoading[app.currentLanguage]){
+        app.fetchTranslation(app.currentLanguage);
+      }
+      return input;
+    }
+    var a = app.translations[app.currentLanguage];
+    if(!a) return input;
+    if(!a[input]) return input;
+    var r = a[input];
+    if(typeof(data) != "undefined") r = r.replace(/%[^% ]+%/,data);
+    if(typeof(data2) != "undefined") r = r.replace(/%[^% ]+%/,data2);
+    if(typeof(data3) != "undefined") r = r.replace(/%[^% ]+%/,data3);
+    return r;
+  };
+  f.$stateful = true;
+  return f;
+});
+
+app.controller('eduSLMEngineCtl', ['$scope', '$mdBottomSheet','$mdSidenav','$mdMedia', '$mdDialog', '$timeout','$interval',"$sce","$http","$filter","$q", 
+function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$interval,$sce, $http, $filter, $q){
+  $scope.$mdMedia = $mdMedia;
+  var self = this;
+
+  app.currentLanguage = "DE";
+  var urlParams = new URLSearchParams(window.location.search);
+  var paramLang = urlParams.get('lang');
+  if(paramLang && paramLang.toUpperCase) paramLang = paramLang.toUpperCase();
+  if(paramLang == "EN" || paramLang == "IT" || paramLang == "FR" || paramLang == "DE")
+  app.currentLanguage = paramLang;
+
+  // https://www.soekia.ch/GPT/?lang=EN
+
+  app.translations = {};
+
+  app.translations.DE = null;
+  app.translations.EN = null;
+  app.translations.FR = null;
+  app.translations.IT = null;
+
+  app.translationsLoading = {};
+
+  app.fetchTranslation = function(lang,callback){
+    app.translationsLoading[lang] = true;
+    $http.get("i18n/"+lang+".json?r="+Math.random()).then(function(response) {
+      app.translations[lang] = response.data;
+      if(callback) callback();
+    },function(){
+      app.translationsLoading[lang] = false;
+    });
+  };
+  app.setLanguage = function(lang,callback){
+    for(var k in app.translations){
+      if(k == lang){
+        app.currentLanguage = lang;
+        self.currentLanguage = lang;
+        app.fetchTranslation(lang,callback);
+        try{
+          localStorage.setItem("displayLanguage",lang);
+        }catch(e){}
+      }
+    }
+  };
+
+  self.changeLanguage = function(target){
+    app.setLanguage(target, self.reloadTranslationContent);
+  }
+
+  self.reloadTranslationContent = function(){
+    // from here we can call self.trans as language file is loaded
+    self.trans = function(input, data, data2, data3){
+      return $filter('trans')(input, data, data2, data3);
+    }   
+
+    $http.get("i18n/Synonyms_"+app.currentLanguage+".json?v1").then(function(response) {
+      self.synonyms = response.data;
+      for(var k in self.synonyms){
+        self.synonyms[k].push(k);
+        for(var i=0; i < self.synonyms[k].length; i++){
+          var c = self.synonyms[k][i];
+          if(!self.synonyms[c]) self.synonyms[c] = self.synonyms[k];
+        }
+      }
+    });
+    $http.get("i18n/Collections_"+app.currentLanguage+".json?v1").then(function(response) {
+      self.predefined = response.data;
+      if(self.documents.length == 0){
+        self.loadPredefined("default");
+      }
+    });
+
+  }
+
+  app.setLanguage(app.currentLanguage, self.reloadTranslationContent);
+
+  window.eduSLMEngine = self;
+
+  self.maxDocs = 100;
+
+  self.maxNGrams = 6;      // Show statistics for one to .. words
+
+  self.showInsideButton = true;
+
+  self.ignoreCase = false; // Case-sensitivity
+
+  // RE pattern to select valid characters. Invalid characters are replaced with a whitespace
+  
+  self.REallowedChars = /[^a-zA-Z'’’ÀÈÉÌÒÔÙàèéìòôùäöüÖÄÜß0-9\.!\?\+\=\-:\/\|"\uf000❯]+/g;
+
+  self.matchingSort = 'value';
+  self.ngramSort = 'value';
+
+  self.maxNext = 12;
+  self.temp = 70;
+  self.context = 1.0;
+  self.nWeight = 1.0;
+  self.ngram = 5;
+  self.showngram = 3;
+
+  self.input = [];
+  self.nextSuggestions = [];
+
+  self.task = "";
+  self.prompt = "";
+  self.promptDefault = "";
+  self.documents = [];
+  self.predefined = [];
+
+  self.scrollRight = function(){
+    var w = parseInt(document.getElementById('inputPanel').offsetWidth);    
+    var d = document.getElementById('wrapper');
+    if(d.scrollLeft < w-64){
+      d.scrollLeft = w-64;
+    }else{
+      d.scrollLeft += w+28;
+    }
+  };
+  self.isMark = function(s){
+    return s.match(/[\.\?\!,\n:❯]/);
+  }
+  if(window.innerWidth < 1024){
+    angular.element(document.body).addClass("smallScreen");
+    self.showInsideButton = false;
+  }
+
+  self.sortedMatching = {
+    sorted : [],
+    getItemAtIndex: function (i) {
+      return self.sortedMatching.sorted[i];
+    },
+    getLength: function () {
+      return self.sortedMatching.sorted.length;
+    }
+  };
+  self.sortedNGrams = {
+    sorted : [],
+    getItemAtIndex: function (i) {
+      return self.sortedNGrams.sorted[i];
+    },
+    getLength: function () {
+      return self.sortedNGrams.sorted.length;
+    }
+  };
+
+  self.splitWords = function(input){
+    if(!input) return [];
+    var i, j, k, textlen, len, s, stem;
+    // Prepare key hash
+    var text = input;
+    text = text.replace(/\r/g,"");  // remove line feeds
+    text = text.replace(/\t/g," ");  // remove line feeds
+    text = text.replace(/\n\n/g,"❯"); // double newlines to newline chars
+    text = text.replace(/\n/g," "); // single newlines to spaces
+    text = text.replace(/❯+/g,"❯"); // remove double ❯
+
+    // special case for Test-Word as one Word
+    text = text.replace(/(?<=[^\s\d])-(?=[^\s\d])/g, "\u{f000}"); 
+    text = text.replace(/(?<=[^\s])\+(?=[\s])/g, "\u{f001}"); 
+    text = text.replace(/(?<=[^\s])\#(?=[\s])/g, "\u{f002}"); 
+
+    text = text.replace(/([❯\.\!\?\-\+\:\/=\|"])/g," $1 ");
+
+    text = text.replace(/\uf001/g, "+");
+    text = text.replace(/\uf002/g, "#");
+
+    // Remove all irrelevant characters
+    text = text.replace(self.REallowedChars, " ").replace(/\s+/," ").replace(/^\s+/,"").replace(/\s+$/,"");
+
+    // Create a hash
+    if (self.ignoreCase) text = text.toLowerCase();
+    var ws = text.split(/\s+/);
+    var words = [];
+    for(var i=0; i< ws.length; i++){
+      var text = ws[i].replace(/\uf000/g, "-");
+      var w = {text:text, lc:text.toLowerCase()};
+      words.push(w);
+    }
+    return words;
+  };
+
+  self.firstPrompt = true;
+  self.startWithPrompt = function(){
+    self.needRecalculateDocumentContext = true;
+    var p = (!self.prompt || self.prompt == "" ? self.promptDefault : self.prompt).replace("...","");
+    // match prompt with documents to calculate context value
+    self.promptSplit = self.splitWords("❯"); // with new line at end
+//    self.promptSplit = self.splitWords(p+"❯"); // with new line at end
+//    if(p[p.length-1] == "\n") self.promptSplit.push({text:"\n", lc:"\n"});
+    for(var i=0; i < self.promptSplit.length; i++){
+      var w = {};
+      w.token = self.promptSplit[i].lc;
+      w.text = self.promptSplit[i].text;
+      self.addNextWord(w);
+    }
+    if(self.firstPrompt){
+      self.firstPrompt = false;
+      if(!self.isManualMode)
+        self.startGenerating();
+    }
+  };
+
+  self.getInput = function(){
+    var r = [];
+    if(!self.promptSplit) {
+      var p = self.prompt.replace("...","");
+      self.promptSplit = self.splitWords("❯");
+    }
+    if(self.input.length == 0)
+      for(var i=0; i < self.promptSplit.length; i++){
+        var w = {};
+        w.token = self.promptSplit[i].lc;
+        w.text = self.promptSplit[i].text;
+        r.push(w);
+      }
+
+    for(var i=0; i < self.input.length; i++){
+      var w = {};
+      w.token = self.input[i].token;
+      w.text = self.input[i].text;
+      r.push(w);
+    }
+
+    // remove linebreaks from input stream 
+    for(var i=0; i < r.length; i++){
+      if(r[i].token == "\n"){
+        r.splice(i,1);
+        i--;
+      }
+    }
+    return r;
+  };
+
+  self.getTokenString = function(item){
+    var r = "";
+
+    if(item && item.tokens && item.tokens.length > 0){
+      if(item.tokenString) return item.tokenString;
+      for(var i=0; i < item.tokens.length; i++){
+        var c = self.getNgramClass(item,i);
+        s = item.tokens[i];
+        var index = (item.tokens.length-2)-i;
+        if(item.tokens.length > 1){
+          // 
+          var ns = s;
+          var input = self.getInput();
+          if(input.length > 0 && input.length >= input.length-index){
+            var s2 = input[input.length-1-index] ? input[input.length-1-index].text : "";
+            if(s2 != s){
+              if(item.synonym)
+                ns = '<span style="color:blue;font-weight:bold">'+s+'</span>'; else
+                ns = '<span style="color:red;font-weight:bold">'+s+'</span>';
+            }
+          }
+          s = ns;
+        }
+        r += '<span class="'+c+'">'+s+' </span>';
+      }
+      item.tokenString = $sce.trustAsHtml(r);  
+    }
+    return $sce.trustAsHtml(r);
+  };  
+
+  // not used 
+  self.hammingDistance = function(str1, str2) {
+    var i = 0, count = 0;
+    if(str1.length < str2.length){
+      var t = str2;
+      str2 = str1;
+      str1 = t;
+    }
+    while (i < str1.length){
+      if (str1[i] != str2[i])
+        count++;
+      i++;
+    }
+    return count;
+  };
+
+  // not used 
+  self.levenshteinDistance = function(s, t) {
+    if (!s.length) return t.length;
+    if (!t.length) return s.length;
+    const arr = [];
+    for (let i = 0; i <= t.length; i++) {
+      arr[i] = [i];
+      for (let j = 1; j <= s.length; j++) {
+        arr[i][j] =
+          i === 0
+            ? j
+            : Math.min(
+                arr[i - 1][j] + 1,
+                arr[i][j - 1] + 1,
+                arr[i - 1][j - 1] + (s[j - 1] === t[i - 1] ? 0 : 1)
+              );
+      }
+    }
+    return arr[t.length][s.length];
+  };
+
+  // used for synonyms and document context
+  self.jaroWrinkerDistance = function (s1, s2) {
+    var m = 0;
+
+    // Exit early if either are empty.
+    if ( s1.length === 0 || s2.length === 0 ) {
+        return 0;
+    }
+
+    // Exit early if they're an exact match.
+    if ( s1 === s2 ) {
+        return 1;
+    }
+
+    var range     = (Math.floor(Math.max(s1.length, s2.length) / 2)) - 1,
+        s1Matches = new Array(s1.length),
+        s2Matches = new Array(s2.length);
+
+    for ( i = 0; i < s1.length; i++ ) {
+        var low  = (i >= range) ? i - range : 0,
+            high = (i + range <= s2.length) ? (i + range) : (s2.length - 1);
+
+        for ( j = low; j <= high; j++ ) {
+        if ( s1Matches[i] !== true && s2Matches[j] !== true && s1[i] === s2[j] ) {
+            ++m;
+            s1Matches[i] = s2Matches[j] = true;
+            break;
+        }
+        }
+    }
+
+    // Exit early if no matches were found.
+    if ( m === 0 ) {
+        return 0;
+    }
+
+    // Count the transpositions.
+    var k = n_trans = 0;
+
+    for ( i = 0; i < s1.length; i++ ) {
+        if ( s1Matches[i] === true ) {
+        for ( j = k; j < s2.length; j++ ) {
+            if ( s2Matches[j] === true ) {
+            k = j + 1;
+            break;
+            }
+        }
+
+        if ( s1[i] !== s2[j] ) {
+            ++n_trans;
+        }
+        }
+    }
+
+    var weight = (m / s1.length + m / s2.length + (m - (n_trans / 2)) / m) / 3,
+        l      = 0,
+        p      = 0.1;
+
+    if ( weight > 0.7 ) {
+        while ( s1[l] === s2[l] && l < 4 ) {
+        ++l;
+        }
+
+        weight = weight + l * p * (1 - weight);
+    }
+
+    return weight;
+  };
+
+  self.useDistance = false;
+  self.useSynonyms = false;
+  self.maxDistance = 0.95;
+
+  self.setUseSynonyms = function(value){
+    if(self.useSynonyms != value){
+      self.oldNextSuggestions = self.nextSuggestions;     
+      self.oldSortedMatching = self.sortedMatching.sorted;
+      self.useSynonyms = value;        
+      self.needRecalculateDocumentContext = true;  
+      self.calculateDocumentContext();
+      self.getNextWords();      
+      self.rebuildMatchList();
+      if(self.oldSortedMatching.length == self.sortedMatching.sorted.length){
+        self.nextSuggestions = self.oldNextSuggestions;
+      }
+    }
+  };
+
+  self.setUseDistance = function(value){
+    if(self.useDistance != value){
+      self.oldNextSuggestions = self.nextSuggestions;     
+      self.oldSortedMatching = self.sortedMatching.sorted;
+      self.useDistance = value;          
+      self.getNextWords();
+      self.rebuildMatchList();
+      if(self.oldSortedMatching.length == self.sortedMatching.sorted.length){
+        self.nextSuggestions = self.oldNextSuggestions;
+      }
+    }
+  };
+
+  self.hasMatchUpTo = function(inputToken,item){
+    var n = 0;
+    item.synonym = false;
+    item.distance = 1;
+    var tokens = item.tokens;
+    for(var i=1; i < tokens.length; i++){ // look back 
+      if(inputToken.length > i-1+n){
+        // ignores , 
+        if(inputToken[inputToken.length-i-n].text == ','){
+          n++;
+          i--;
+          continue;
+        }
+        if(inputToken[inputToken.length-i-n].token != tokens[tokens.length-i-1]){
+          var marks = ['.','?','!'];
+          if(marks.indexOf(inputToken[inputToken.length-i-n].text) != -1 &&
+             marks.indexOf(tokens[tokens.length-i-1]) != -1){
+            // was both marks, continue
+            continue;
+          }
+          var wasSynonym = false;
+
+          if(self.useSynonyms){
+            // if this as a synonym
+            if(self.synonyms[inputToken[inputToken.length-i-n].text]){
+
+              if(self.synonyms[inputToken[inputToken.length-i-n].text].indexOf(tokens[tokens.length-i-1]) > -1){
+                if(!item.synonym) item.synonym = [];
+                item.synonym.push(inputToken[inputToken.length-i-n].text);
+                wasSynonym = true;
+              }
+            }            
+          }
+
+          if(!wasSynonym){
+            if(self.useDistance){
+              var d = self.jaroWrinkerDistance(inputToken[inputToken.length-i-n].text,tokens[tokens.length-i-1]);
+              item.distance = (item.distance + d) / 2.0;   
+              if(d < self.maxDistance)
+                return i-1;              
+            }else
+              return i-1;
+          }
+        }
+      }else{
+        return i-1;
+      }
+    }
+    // inputToken[inputToken.length-i-n].token[0] == inputToken[inputToken.length-i-n].token[0].toUpperCase()[0]
+    return tokens.length-1; 
+  };
+
+  const shuffleArray = array => {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
+    }
+  }
+  function countWordsInString(str1, str2){
+    let next = 0;
+    let c = 0;
+    do {
+      var n = str2.indexOf(str1, next);
+      c = c +1;
+      next = n + str1.length;
+    }while (n>=0);
+    return c;
+  }  
+
+  self.documentContext = {};
+
+  self.getDocumentContextString = function(id){
+    var s = "";
+    if(self.documentContext["matches"+id]){
+      for(var k in self.documentContext["matches"+id]){
+        s += (s!="" ? ", ":"")+self.documentContext["matches"+id][k] + " x "+k;
+      }
+    }
+    return s;
+  };
+
+  app.fetchStopwords = function(lang,callback){
+    app.stopwordsLoading[lang] = true;
+    $http.get("i18n/Stopwords_"+lang+".json?r="+Math.random()).then(function(response) {
+      app.stopwords[lang] = response.data;
+      if(callback) callback();
+    },function(){
+      app.stopwordsLoading[lang] = false;
+    });
+  };
+  app.stopwordsLoading = {};
+  app.stopwords = {"DE":[], "EN":[]};
+  app.fetchStopwords("DE");
+  app.fetchStopwords("EN");
+
+  self.needRecalculateDocumentContext = true;
+  self.calculateDocumentContext = function(){
+    if(!self.needRecalculateDocumentContext) return;
+    if(!self.wordList || !self.wordList[1]) return;
+    self.documentContext = {};
+    for (var i=0; i < self.documents.length; i++){
+      self.documentContext[self.documents[i].id] = 1; // default value
+      self.documentContext["matches"+self.documents[i].id] = {};
+    }
+    var promptParts = self.splitWords(self.prompt);
+
+    /* auto stop word counting
+    var sumWords = 0;
+    for(var i=0; i < self.wordList[1].length; i++){
+      sumWords += self.wordList[1][i].count;
+    }
+    var n = self.wordList[1].length;
+    var mean = sumWords / n;
+    var threshold = mean * 25; // factor, only if 25x larger, will count as stoppword
+
+    for (var z=0; z < promptParts.length; z++){
+      for (var i=0; i < self.wordList[1].length; i++){
+        if(self.wordList[1][i].text.toLowerCase() == promptParts[z].lc){
+          if(self.wordList[1][i].count > threshold){
+            // remove stoppword
+            promptParts.splice(z,1);
+            z--;
+            break;
+          }
+        }
+      }
+    }
+    */
+
+    var splitText = {};
+    var docPromptMatches = {};
+    var hasMatchAtAll = false;
+    var lang = "DE";
+    // detectLanguage
+    var countLangues = {"DE":0, "EN":0}
+    for (var i=0; i < self.documents.length; i++){        
+      var words = self.documents[i].words;
+      for (var x = 0; x < words.length; x++) {
+        for(var l in countLangues){
+          if((app.stopwords[l].indexOf(words[x].lc) != -1)) countLangues[l]++;
+        }
+      }        
+    }
+    var maxLang = 0;
+    for(var l in countLangues){
+      if(maxLang < countLangues[l]){
+        lang = l;
+        maxLang = countLangues[l];
+      }
+    }
+
+    for (var z=0; z < promptParts.length; z++){
+      if(promptParts[z].text == "") continue;
+      var targetWord = promptParts[z].lc;
+      if(app.stopwords[lang].indexOf(targetWord) != -1) continue; // is a stoppword, ignore
+
+      var synonyms = [targetWord];
+      if(self.useSynonyms && self.synonyms[promptParts[z].text]){
+        for(var i=0; i < self.synonyms[promptParts[z].text].length; i++){
+          if(self.synonyms[promptParts[z].text][i] == promptParts[z].text) continue;
+          var syn = self.synonyms[promptParts[z].text][i].toLowerCase();
+          if(synonyms.indexOf(syn) == -1) synonyms.push(syn);
+        }
+      }    
+
+      var counts = {};
+      var totalCount = 0;
+      for (var i=0; i < self.documents.length; i++){        
+        var words = self.documents[i].words;
+        var count = 0;
+
+        // Count occurrences of the target word or similar words
+        for (var x = 0; x < words.length; x++) {
+//          if(words[x].lc.length <= 3) continue;
+          if (words[x].lc.length == 1) continue;          
+          // check all synonyms
+          for(var j=0; j < synonyms.length; j++){
+            if (self.jaroWrinkerDistance(words[x].lc, synonyms[j]) >= 0.95) {
+              count++;            
+              // add this match to display later
+              //targetWord
+              if(!self.documentContext["matches"+self.documents[i].id][words[x].text])
+                  self.documentContext["matches"+self.documents[i].id][words[x].text] = 0;
+              self.documentContext["matches"+self.documents[i].id][words[x].text]++; 
+            }
+          }
+        }
+
+        counts[i] = count;
+        hasMatchAtAll = hasMatchAtAll || count > 0;
+        totalCount += counts[i];
+      }
+
+      for (var i=0; i < self.documents.length; i++){  
+        var totalOther = totalCount - counts[i];
+        if(totalOther <= 0) totalOther = 0;
+        self.documentContext[self.documents[i].id] *= 1+( 0.5*Math.log(counts[i]+1) / (totalOther+1));
+        if(counts[i] > 0){
+          if(!docPromptMatches[self.documents[i].id])
+            docPromptMatches[self.documents[i].id] = 0;
+          docPromptMatches[self.documents[i].id]++;
+        }
+      }
+    }
+    for (var i=0; i < self.documents.length; i++){   
+      // anzahl Matches vom prompt
+      if(docPromptMatches[self.documents[i].id])
+        self.documentContext[self.documents[i].id] = 
+          self.documentContext[self.documents[i].id] * (docPromptMatches[self.documents[i].id]+1);
+    }
+
+    var max = 0;
+    var min = 9999999999999999;
+    for (var i=0; i < self.documents.length; i++){        
+      max = Math.max(max, self.documentContext[self.documents[i].id]);
+      min = Math.min(min, self.documentContext[self.documents[i].id]);
+    }
+    for (var i=0; i < self.documents.length; i++){        
+      // normalize data
+      if(max == min){
+        self.documentContext[self.documents[i].id] = hasMatchAtAll ? 100 : 1;
+      }else
+        self.documentContext[self.documents[i].id] = Math.max(1,Math.round((self.documentContext[self.documents[i].id]-min) / (max-min) * 100));
+    }
+
+    self.needRecalculateDocumentContext = false;
+  }
+
+  self.getNextWords = function(){
+    self.calculateDocumentContext();
+    var lastWords = self.getInput().slice(-self.ngram).reverse();
+
+    // gibt an, ob das letzte Zeichen ein Satzzeichen oder ähnliches war.
+    self.wasMark = lastWords.length == 0 || (lastWords.length > 0 && (
+        lastWords[0].text == "\n" ||
+        lastWords[0].text == ":" ||
+        lastWords[0].text == "," ||
+        lastWords[0].text == "." ||
+        lastWords[0].text == "?" ||
+        lastWords[0].text == "!"));
+
+    self.nextSuggestions = [];
+
+
+    function addWord(w,level){
+      var currentLevel = 0;
+      if(self.nextSuggestions.length > 0)
+        currentLevel = self.nextSuggestions[self.nextSuggestions.length-1].level;
+      if(currentLevel > level && self.nextSuggestions.length >= self.maxNext) return; // already too much      
+      w.level = level;
+      for(var i=0; i < self.nextSuggestions.length; i++){
+        if(self.nextSuggestions[i].text == w.text) {
+          // already exists
+          return;
+        }
+      }
+      // start with upper case word after sentence ended
+      if(self.wasMark && !(lastWords.length > 0 && lastWords[0].text == ",")) {
+        w.text = w.text.charAt(0).toUpperCase() + w.text.slice(1);
+      }
+      self.nextSuggestions.push(w);
+    }
+
+    function randomLastElements(){
+      self.nextSuggestions.sort(function(a,b){
+        //if(a.matches < b.matches) return 1;
+        //if(a.matches > b.matches) return -1;
+        if(a.calc < b.calc) return 1;
+        if(a.calc > b.calc) return -1;
+        if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
+        if(a.text.toLowerCase() > b.text.toLowerCase()) return 1;
+        return 0;
+      });
+
+      var last = self.nextSuggestions.slice(0);
+
+      /*
+
+      Menge M aus allen n-Grammen, welche .matches > 0 haben
+      geordnet nach Level, Häufigkeit und alphabetisch
+      wenn self.temp = 0, dann sollten sie genau so gezogen werden, die top self.maxNext
+      wenn self.temp == 100, dann sollten die Element gemischt werden, mit einer Gewichtung, top Level
+           Elemente sollten mit hoher Wahrscheinlichkeit in der Menge bleiben
+
+      es wird jetzt self.maxNext Mal aus M gezogen und gewürfelt. 
+      wenn würfel  > self.temp dann wird das Top Item gewählt 
+      wenn würfel <= self.temp dann wird ein zufälliges Element aus M gewählt
+      da insgesamt self.maxNext gezogen wird, erhöht sich mit jeder Ziehung die Warscheinlichkeit
+      das Top Item zu ziehen.
+      */
+
+      var newItems = [];
+      while(last.length > 0 && newItems.length < self.maxNext){
+        var rnd = Math.random()*100;
+        if(rnd > self.temp){
+          // pick from list 
+          var x = last.shift();
+          newItems.push(x);
+        }else{
+          // random pick
+          rnd = Math.floor(Math.random()*last.length);
+          newItems.push(last[rnd]);
+          last.splice(rnd,1);
+        }
+      }
+      self.nextSuggestions = newItems;
+      self.nextSuggestions.sort(function(a,b){
+        //if(a.matches < b.matches) return 1;
+        //if(a.matches > b.matches) return -1;
+        if(a.calc < b.calc) return 1;
+        if(a.calc > b.calc) return -1;
+        if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
+        if(a.text.toLowerCase() > b.text.toLowerCase()) return 1;
+        return 0;
+      });
+
+
+    }
+
+    if(!self.wordList) return;
+    var maxMatches = 0;
+    var inputToken = self.getInput();
+
+    for(var i=self.ngram; i > 0; i--){
+      for(var z = 0; z < self.wordList[i].length; z++){
+        var n = self.hasMatchUpTo(inputToken,self.wordList[i][z]);
+        self.wordList[i][z].matches = n == self.wordList[i][z].tokens.length-1 ? n : 0;
+        if(self.wordList[i][z].matches) maxMatches = Math.max(self.wordList[i][z].matches,maxMatches);
+      }
+    }
+    var currentInput = "";
+    for(var i=0; i < self.input.length; i++){
+      currentInput += (currentInput == "" ? "" : " ")+self.input[i].text;
+    }
+
+    for(var i=self.ngram; i > 1; i--){
+      if(!self.wordList[i]) continue;
+      for(var z = 0; z < self.wordList[i].length; z++){
+        var isMatch = self.wordList[i][z].matches > 0;
+        if(isMatch){
+          var w = {};
+          w.matches = self.wordList[i][z].matches;
+          w.ngram = "ngram"+(self.wordList[i][z].matches+1);
+          w.token = self.wordList[i][z].tokens[self.wordList[i][z].tokens.length-1]; 
+          w.text = w.token;
+          w.source = self.wordList[i][z].refs;
+          w.percent = self.wordList[i][z].percent;
+          w.calc = w.percent;
+          if(self.wordList[i][z].index){
+      
+            var SOPMatches = currentInput.match(/❯/g);
+            var writtenSOPs = SOPMatches && SOPMatches.length ? SOPMatches.length : 0;
+            w.index = self.wordList[i][z].index; // add SOP index list
+            var SOPSum = 1;
+            for(var x = 0; x < w.index.length; x++){
+              SOPSum += self.documentContext[w.index[x].d] / Math.max(1,Math.abs(w.index[x].n - writtenSOPs));
+            }
+            // median value of all SOP index positions
+            w.calc = w.calc * (1+SOPSum/10); // the higher the index the lower the value here
+          }
+
+          // calculate the document context in
+          var sum = 0;
+          var sumcount = 0;
+          var totalmatches = 0;
+          for(var k in w.source){
+            sum += w.source[k] * self.documentContext[k] * self.context;
+            if(w.source[k] > 0) sumcount++;
+            totalmatches += w.source[k];
+          }
+          if(sumcount > 0){
+            var avg = (sum / sumcount / totalmatches);
+            w.calc = w.calc + avg;
+          }
+
+          // lower already existing strings in input
+          /*
+          if(i > 1){
+            var existing = countWordsInString(self.wordList[i][z].text, currentInput)+1;
+            existing = existing / 1.25; 
+            w.calc = w.calc * (1 / existing);
+          }
+          */
+
+          // calculate n of n-gram on top
+          w.calc = w.calc * (1 + self.wordList[i][z].n * self.nWeight);
+
+          self.wordList[i][z].calc = w.calc;
+
+
+          addWord(w,self.wordList[i][z].matches+1);
+        }
+      }
+      //if(self.nextSuggestions.length >= self.maxNext) break;
+    }
+    var n = 0;
+
+    if(self.wordList[1] ){      
+      for(var i = 0; i < self.wordList[1].length; i++){
+        var w = {};
+        w.matches = 0;
+        w.token = self.wordList[1][i].tokens[0]; 
+        if(w.token == "❯") continue; // not use this one
+        w.text = w.token;
+        w.ngram = "ngram1";
+        w.percent = self.wordList[1][i].percent;
+        w.calc = w.percent;
+        w.source = self.wordList[1][i].refs;
+        if(self.isMark(w.text) && self.wasMark) continue;
+        addWord(w,1);              
+      }
+    }
+    randomLastElements();
+
+    self.rebuildMatchList();
+    self.indexMatchingTop = 0;
+  };
+
+  self.getNextWords();
+
+  self.addNextWord = function(w){
+    if(w.text == "\n"){
+      if(self.input.length > 0 && self.input[self.input.length-1].text == "\n") return; // only one
+      if(!self.wasMark)
+        self.input.push({text:'.', token:'.'});
+    }
+    self.input.push(w);
+    self.getNextWords();
+    self.saveSettings();
+    $timeout(function(){
+      document.getElementById('inputBox').focus();
+    },1)
+  }
+
+  self.addNextWords = function(item){
+    var lastWords = [];
+    for(var i=1; i < self.ngram; i++){ // look back numWords - 1 words
+      if(self.input.length > i-1){
+        lastWords.push(self.input[self.input.length-i]);
+      }
+    }
+    for(var i=0; i < item.tokens.length; i++){
+      var w = {}
+      w.token = item.tokens[i];
+      w.text = w.token;
+      w.source = item.refs;
+      if(self.wasMark && !(lastWords.length > 0 && lastWords[0].text == ",")) {
+        w.text = w.text.charAt(0).toUpperCase() + w.text.slice(1);
+        self.wasMark = false;
+      }
+      self.input.push(w);
+    }
+    self.getNextWords();
+    self.saveSettings();
+    $timeout(function(){
+      document.getElementById('inputBox').focus();
+    },1)
+  }
+
+  self.deleteLastWord = function(){
+    if(self.input.length > 0){
+      self.input.pop();
+      self.getNextWords();
+      self.saveSettings();
+      $timeout(function(){
+        if(self.input.length == 0){
+          self.isGenerating = false;
+          self.firstPrompt = true;
+        }
+
+        document.getElementById('inputBox').focus();
+      },1)
+    }
+  }
+
+  self.deleteWord = function(){
+    if(self.waitSingleStepTimeout){
+      $timeout.cancel(self.waitSingleStepTimeout);
+      self.waitSingleStepTimeout = null;
+    }
+    self.waitAfterGenerating = 1;
+    self.input = [];
+    self.firstPrompt = true;
+    self.getNextWords();
+    self.saveSettings();
+    $timeout(function(){
+      document.getElementById('inputBox').focus();
+    },1)
+  }
+
+  self.isSelected = function(item){
+    if(!item || !item.tokens) return false;
+    for(var i=0; i < self.nextSuggestions.length; i++){
+      if(self.nextSuggestions[i].token == item.tokens[item.tokens.length-1]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  self.getNgramClass = function(item,index){
+    var r = "";
+    if(item.matches == 0) return "ngram1";
+    if(index == item.tokens.length - 1) return "ngram"+(item.matches+1);
+    if(index >= item.tokens.length-1-item.matches){
+      return "ngram"+(item.matches-(item.tokens.length-1-index)+1);
+    }
+    return r;
+  }
+  
+  self.newDocument = function(ev){
+    if(self.documents.length >= self.maxDocs){
+      var alert = $mdDialog.alert()
+      .title(self.trans('ERROR'))
+      .textContent(self.trans('ERRORTOMANYDOCUMENTS'))
+      .ariaLabel(self.trans('ERROR'))
+      .ok(self.trans('OK'));
+      $mdDialog.show(alert);
+      return;
+    }
+    var d = {newDoc:true, text:""};
+    self.editDocument(ev,d);
+  };
+
+  self.getNextDocumentID = function(){
+    var ids = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    var all = [];
+    for(var i=0; i < ids.length; i++){
+      all.push(ids[i]);
+    }
+    for(var i=0; i < ids.length; i++){
+      for(var z=0; z < ids.length; z++){
+        all.push(ids[i]+ids[z]);
+      }
+    }
+
+    for (var i=0; i < self.documents.length; i++){
+      var p = all.indexOf(self.documents[i].id);
+      if(p > -1) all.splice(p,1);
+    }
+    if(all.length == 0) return ""; // all slots are full
+    return all[0];
+  };
+  
+  self.addDocument = function(text){
+    var docCode = (Math.random()*1e17).toString(36);
+    var d = {id:self.getNextDocumentID(),code:docCode, text:text, words:[]};
+    if(self.currentCoCollection){
+      self.updateCoCollectionDoc(docCode,text);
+    }else{
+      self.documents.push(d);
+      self.updateDocuments();
+    }
+  };
+  
+  self.removeDocument = function(d,ev){
+    var confirm = $mdDialog.confirm()
+          .title(self.trans('ASKDELETE'))
+          .textContent(self.trans('CONFIRMDELDOC',d.id))
+          .ariaLabel(self.trans('DELETE'))
+          .targetEvent(ev)
+          .ok(self.trans('DELETE'))
+          .cancel(self.trans('CANCEL'));
+
+    $mdDialog.show(confirm).then(function() {
+      var n = self.documents.indexOf(d);
+      if(n > -1){
+
+        if(self.currentCoCollection){
+          self.updateCoCollectionDoc(d.code,"NULL");
+        }else{
+          self.documents.splice(n,1);
+          self.needsRebuild = true;
+          self.rebuildNGrams(true);
+          self.updateDocuments();
+          self.saveDocuments();
+          self.rebuildMatchList();
+          self.getNextWords();
+        }
+
+        
+      }  
+    }, function() {  });      
+  };
+
+    
+  self.showTempSettings = function(ev){
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.self = self;
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+      },
+      templateUrl: 'editTempSettings.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+    });
+  };
+
+  self.collectionAPIPost = function(data){
+    var deferred = $q.defer();
+    var r = $http({
+      url: "collections.php",
+      method: "POST",
+      withCredentials : true,
+      useXDomain : true,
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      transformRequest: function(obj) {
+        var str = [];
+        for(var p in obj)
+          str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+        return str.join("&");
+      },
+      data: data
+    });          
+    r.then(function(response){
+      var data = response.data;
+      deferred.resolve(data);
+    },function(){
+      // server error, no answer or no connection
+      console.log("Connection failed.");
+    });
+    return deferred.promise;
+  };
+
+  self.currentCoCollection = null;
+  self.showCoCollectionCode = function(ev){
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.code = self.currentCoCollection.toUpperCase();
+        $scope.ok = function() {
+          $mdDialog.cancel();
+        };
+      },
+      templateUrl: 'cocollectioncode.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:false
+    });    
+  };
+  self.createCoCollection = function(ev){
+    self.currentCoCollection = null;
+
+    function switchColletion(upload){
+      var a = {"action":"create"};
+      if(upload){
+        var docs = {}; 
+        for(var i=0; i < self.documents.length; i++){
+          docs[(Math.random()*1e17).toString(36)] = self.documents[i].text;
+        }     
+        a.docs = JSON.stringify(docs);  
+      }
+      self.collectionAPIPost(a).then(function(data){
+        if(data.result == "OK"){
+          self.currentCoCollection = data.code;
+          self.refreshCoCollection();
+          self.pauseGenerating();
+          self.deleteWord();
+          self.showCoCollectionCode(ev);
+        }
+      });      
+    }
+
+    var confirm = $mdDialog.confirm()
+      .title(self.trans('CREATECOCOLLECTION'))
+      .textContent(self.trans('ASKUSEEXISTINGDOCUMENTS'))
+      .ariaLabel(self.trans('ASKUSEEXISTINGDOCUMENTS'))
+      .targetEvent(ev)
+      .ok(self.trans('USEEXISTING'))
+      .cancel(self.trans('NOTUSEEXISTING'));
+
+    if(self.documents.length > 0)
+      $mdDialog.show(confirm).then(function(){
+        // upload existing docs now
+        switchColletion(true);
+      },function(){
+        switchColletion(false);
+      });
+
+    if(self.documents.length == 0)
+      switchColletion(false);
+        
+  };
+  self.joinCoCollection = function(ev){
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.code = "";
+        $scope.failed = false;
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+
+        $scope.join = function() {
+          $scope.failed = false;
+          self.collectionAPIPost({"action":"get","code":$scope.code}).then(function(data){
+            if(data.result == "FAILED"){
+              $scope.failed = true;
+            }else{
+              self.currentCoCollection = $scope.code;
+              self.refreshCoCollection();
+              self.pauseGenerating();
+              self.deleteWord();
+              $mdDialog.cancel();
+            }
+          });    
+        };
+      },
+      templateUrl: 'joinCoCollection.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:false
+    });
+  };
+  self.refreshCoCollection = function(){
+    if(!self.currentCoCollection) return;
+    self.collectionAPIPost({"action":"get","code":self.currentCoCollection}).then(function(data){
+      // use data
+      var changed = false;
+      for(var i=0; i < self.documents.length; i++){
+        var found = false;
+        for(var k in data.docs){
+          if(self.documents[i].code == k){
+            found = true;
+            break;
+          }
+        }
+        if(!found){
+          self.documents.splice(i,1);
+          i--;
+          changed = true;
+        }
+      }
+      for(var k in data.docs){
+        var found = false;
+        for(var i=0; i < self.documents.length; i++){
+          if(self.documents[i].code == k){
+            if(self.documents[i].text != data.docs[k]){
+              self.documents[i].text = data.docs[k];
+              changed = true;
+              console.log(k+" = "+data.docs[k]);
+            }
+            found = true;
+            break;
+          }
+        }
+        if(!found){
+          var d = {id:self.getNextDocumentID(),code:k, text:data.docs[k], words:[]};
+          self.documents.push(d);
+          changed = true;
+        }
+      }
+      if(changed){
+        self.documents.sort(function(a,b){
+          if (a.code > b.code) {
+              return -1;
+          }
+          if (b.code > a.code) {
+              return 1;
+          }
+          return 0;
+        });
+        for(var i=0; i < self.documents.length; i++){
+          self.documents[i].id = "";
+        }
+        for(var i=0; i < self.documents.length; i++){
+          self.documents[i].id = self.getNextDocumentID();
+        }
+
+        self.updateDocuments();
+        self.needsRebuild = true;
+        self.rebuildNGrams(false);
+        self.getNextWords();          
+      }
+    });
+  };
+  // poll every 5 secs
+  $interval(self.refreshCoCollection,5000);
+
+  self.updateCoCollectionDoc = function(doc,content){
+    self.collectionAPIPost({"action":"update", "code":self.currentCoCollection, "doc":doc, "value":content}).then(function(data){
+      if(data.result == "OK"){
+        self.refreshCoCollection();
+      }
+    });
+  };
+
+
+  self.showTestBench = function(ev){
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.self = self;
+        $scope.cases = [];
+        $scope.apiPost = function(data){
+          var deferred = $q.defer();
+          var r = $http({
+            url: "testbench.php",
+            method: "POST",
+            withCredentials : true,
+            useXDomain : true,
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            transformRequest: function(obj) {
+              var str = [];
+              for(var p in obj)
+                str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+              return str.join("&");
+            },
+            data: data
+          });          
+          r.then(function(response){
+            var data = response.data;
+            deferred.resolve(data);
+          },function(){
+            // server error, no answer or no connection
+            console.log("Connection failed.");
+          });
+          return deferred.promise;
+        }
+
+
+        $scope.refresh = function(){
+          $scope.apiPost({"action":"get"}).then(function(data){
+            $scope.cases = data.cases;
+          });          
+        };
+
+        $scope.delete = function(c){
+          $scope.apiPost({"action":"delete","name":c.name}).then(function(data){
+            $scope.refresh();
+          });          
+        };
+
+        $scope.load = function(c){
+          self.maxNext = c.settings.maxNext;
+          self.temp = c.settings.temp;
+          self.context = c.settings.context;
+          self.nWeight = c.settings.nWeight;
+          self.ngram = c.settings.ngram;
+          self.showngram = c.settings.showngram;
+          self.task = c.settings.task;
+
+          self.prompt = c.prompt;
+
+          self.documents = [];
+          c.docs.map(function(d){
+            self.documents.push({id:self.getNextDocumentID(), text:d, words:[]});
+          });
+
+          $timeout(function() {
+            self.updateDocuments();
+            self.rebuildNGrams();
+            self.rebuildMatchList();            
+          }, 0);
+        };
+        $scope.create = function(){
+
+          var docs = [];
+          for(var i=0; i < self.documents.length; i++)
+            docs.push(self.documents[i].text);
+          
+          var settings = {};
+          settings.maxNext = self.maxNext;
+          settings.temp = self.temp;
+          settings.context = self.context;
+          settings.nWeight = self.nWeight;
+          settings.ngram = self.ngram;
+          settings.showngram = self.showngram;
+          settings.task = self.task;
+          var name = prompt("Name:");
+          for(var i=0; i < $scope.cases.length; i++){
+            if(name == $scope.cases[i].name){
+              name = name + " 2";
+            }
+          }
+          $scope.apiPost({action:"create","name":name,"settings":angular.toJson(settings),"docs":angular.toJson(docs),"prompt":self.prompt}).then(function(){
+            $scope.refresh();
+          });
+        };
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+        // now 
+        $scope.refresh();
+      },
+      onRemoving: function (event, removePromise) {
+        
+      },
+      templateUrl: 'testBench.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+    });
+  };
+
+  self.showRankingSettings = false;
+  self.showRanking = false;
+  
+  self.loadDocuments = function(){    
+    if(localStorage.getItem("slm_documents")){
+      self.documents = [];
+      var ds = JSON.parse(localStorage.getItem("slm_documents"));
+      ds.map(function(d){
+        self.documents.push({id:self.getNextDocumentID(), text:d.text, words:[]});
+      });
+      self.updateDocuments();
+    } 
+  };
+  
+  self.saveDocuments = function(){
+    if(self.currentCoCollection) return; // don't save in browser
+    var ds = [];
+    self.documents.map(function(d){
+      ds.push({id:d.id, text:d.text});
+    });
+    self.saveLocalStorage("slm_documents",JSON.stringify(ds));
+  };
+
+  self.saveSettings = function(){
+    if(self.currentCoCollection) return; // don't save in browser
+    var settings = {
+      prompt: self.prompt,
+      promptDefault : self.promptDefault,
+      task: self.task,
+      showMusicPlayer: self.showMusicPlayer
+    };
+    self.saveLocalStorage("slm_settings",JSON.stringify(settings));
+    self.saveLocalStorage("slm_input",JSON.stringify(self.input));
+  }
+
+  self.loadSettings = function(){
+    if(localStorage.getItem("slm_input")){
+      self.input = JSON.parse(localStorage.getItem("slm_input"));
+      if(self.input.length > 0) self.firstPrompt = false;
+    }
+    if(localStorage.getItem("slm_settings")){
+      var settings = JSON.parse(localStorage.getItem("slm_settings"));
+      for(var k in settings) self[k] = settings[k];
+      self.promptSplit = null;
+      self.needRecalculateDocumentContext = true;
+      self.getNextWords();
+    }
+  }
+
+
+  document.addEventListener("keydown", function KeyCheck(event){
+     if(self.dialogOpen) return; // only if no dialog
+     var KeyID = event.keyCode;
+     switch(KeyID)
+     {
+        case 8:
+          $timeout(self.deleteLastWord,1);
+        break; 
+        case 13:
+          $timeout(function(){ 
+            if(self.input.length > 0){
+              self.addNextWord({text:'\n',token:'\n'}) 
+            }else{
+              self.startWithPrompt();
+            }
+          },1);
+        break; 
+        case 46:
+          $timeout(self.deleteLastWord,1);
+        break;
+        default:
+        break;
+     }
+  });  
+
+  self.updateDocuments = function(){
+    self.documents.map(function(d){
+      d.words = self.splitWords("❯"+d.text);
+      
+      d.content = $sce.trustAsHtml(d.text.replace(/\n/g,"<br>"));
+
+    }); 
+    self.needRecalculateDocumentContext = true;    
+    self.saveDocuments();
+  };  
+
+  self.editDocument = function(ev,d){
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.text = d.text;
+        $scope.id = d.id ? d.id : self.getNextDocumentID();
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+
+        $scope.save = function() {
+          $mdDialog.hide($scope.text);
+        };
+      },
+      templateUrl: 'edit.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+    })
+    .then(function(text) {
+      d.text = text;
+      if(d.newDoc) self.addDocument(text);
+      if(!d.newDoc && self.currentCoCollection){
+        self.updateCoCollectionDoc(d.code,d.text);
+      }
+
+      self.updateDocuments();
+      self.needsRebuild = true;
+      self.rebuildNGrams(true);
+      self.getNextWords();
+    },function(){});
+  };
+
+  self.saveLocalStorage = function(n,v){
+    if(localStorage){
+      try{
+        localStorage.setItem(n,v);
+      }catch(e){}
+    }
+  };
+  
+
+  self.rebuildNGramList = function(from){
+    self.sortedNGrams.sorted = [];
+    for(var z=0; z < from[self.showngram].length; z++){
+      self.sortedNGrams.sorted.push(from[self.showngram][z]);
+    }    
+    self.sortedNGrams.sorted.sort(function(a,b){
+      if(self.ngramSort == 'alpha'){
+        if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
+        if(a.text.toLowerCase() > b.text.toLowerCase()) return 1;
+        return 0;
+      }
+      if(self.ngramSort != 'alpha'){
+        if(a.count < b.count) return 1;
+        if(a.count > b.count) return -1;
+        if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
+        if(a.text.toLowerCase() > b.text.toLowerCase()) return 1;
+        return 0;
+      }
+    });
+  };
+
+  self.rebuildMatchList = function(){
+
+    self.sortedMatching.sorted = [];
+
+    for(var z=1; z < self.wordList.length && z < self.ngram+1; z++){
+      for(var i=0; i < self.wordList[z].length; i++){
+        self.wordList[z][i].tokenString = null;
+        if(self.wordList[z][i].matches > 0)
+           self.sortedMatching.sorted.push(self.wordList[z][i]);
+      }
+    }
+
+    for(var i=0; i < self.wordList[1].length; i++){
+      self.wordList[1][i].tokenString = null;
+      self.sortedMatching.sorted.push(self.wordList[1][i]);
+    }
+
+    // now limit the list to the n selected elements
+    for(var z=0; z < self.sortedMatching.sorted.length; z++){
+      var hasMatch = false;
+      for(var i=0; i < self.nextSuggestions.length; i++){
+        var item = self.sortedMatching.sorted[z];
+        if(self.nextSuggestions[i].token == item.tokens[item.tokens.length-1]) {
+          item.calc = self.nextSuggestions[i].calc; // calc value from context
+          hasMatch = true;
+          break;
+        }
+      }
+      if(!hasMatch){
+        self.sortedMatching.sorted.splice(z,1);
+        z--;        
+      }
+    }
+
+    self.sortedMatching.sorted.sort(function(a,b){
+      if(self.matchingSort == 'alpha'){
+        if(a.text < b.text) return -1;
+        if(a.text > b.text) return 1;
+        return 0;
+      }
+      if(self.matchingSort != 'alpha'){
+        //if(a.matches < b.matches) return 1;
+        //if(a.matches > b.matches) return -1;
+        if(a.calc < b.calc) return 1;
+        if(a.calc > b.calc) return -1;
+        if(a.n < b.n) return 1;
+        if(a.n > b.n) return -1;
+
+        if(a.percent < b.percent) return 1;
+        if(a.percent > b.percent) return -1;
+        if(a.text < b.text) return -1;
+        if(a.text > b.text) return 1;
+        return 0;
+      }
+    });
+
+    self.rebuildNGramList(self.wordList);
+
+
+
+  };
+
+
+  self.setMatchingSort = function(sort){
+    self.saveLocalStorage("slm_matchingsort",sort);
+    self.matchingSort = sort;
+    self.rebuildMatchList();
+  };    
+
+  self.setNgramSort = function(sort){
+    self.saveLocalStorage("slm_ngramsort",sort);
+    self.ngramSort = sort;
+    self.rebuildNGramList(self.wordList);
+  };    
+
+  if(localStorage.getItem("slm_matchingsort"))
+    self.matchingSort = localStorage.getItem("slm_matchingsort");
+
+  if(localStorage.getItem("slm_ngramsort"))
+    self.ngramSort = localStorage.getItem("slm_ngramsort");
+  
+  self.showSource = true;
+  self.getDocumentSourceClass = function(w){
+    // lookup source of word 
+    if(!self.showSource) return "";
+    var r = "";
+    if(w.source){
+      if(Object.keys(w.source).length == 1){
+        for(k in w.source){
+          return "document_"+k;
+        }        
+      }
+    }
+    return r;
+  };
+  self.getDocumentSourceName = function(w){
+    // lookup source of word 
+    if(!self.showSource) return "";
+    var r = "";
+    if(w.source){
+      if(Object.keys(w.source).length == 1){
+        for(k in w.source){
+          return (self.trans ? self.trans('DOCUMENT') : "Dokument")+" "+k;
+        }        
+      }
+    }
+    return r;
+  };
+  self.needsRebuild = true;
+
+  self.rebuilding = false;
+
+  self.rebuildNGrams = function(animated){
+    self.rebuilding = true;
+    self.highlight = null;
+    self.index = [];
+
+    var marks = ['.','?','!'];
+ 
+    var oldIndex = self.indexTop;
+
+    var results = [];
+    var resultsMap = {};
+    for (var k=1; k<= self.maxNGrams; k++) {
+      results[k] = [];
+    }
+
+    var atLeast = 1;       // Show results with at least .. occurrences
+
+// with break on .?!
+// wordList [Array(3023), Array(12048), Array(15559), Array(15434), Array(14813)]
+// without break on .?!
+// wordList [Array(3023), Array(12048), Array(16357), Array(17074), Array(17271)]
+// without .?! in input
+// wordList [Array(3023), Array(12842), Array(17200), Array(17899), Array(18084)]
+    
+    var addDocument = function(doc,item,c){
+      if(!item.refs) item.refs = {};
+      if(!item.refs[doc]) item.refs[doc] = 0;
+      item.refs[doc] += c;
+      if(!item.totalCount) item.totalCount = 0;
+      item.totalCount += c;
+    };
+
+    var totalWords = 0;
+
+    var processDocument = function(d){
+      var text = d.text;
+
+      // reset keys for next run
+      var keys = [null];
+      for (i=1; i<= self.maxNGrams; i++) {
+        keys.push({});
+      }
+
+      var i, j, k, textlen, len, s, stem, n;
+
+      var textlen = d.words.length;
+      totalWords += d.words.length;
+      self.generatedWordsMax = totalWords < 80 ? Math.max(3,totalWords) : 80;
+      var numberOfSOP = 0;
+      for (var i=0; i < textlen; i++) {
+        s = d.words[i].text;
+        if(s == "❯") {
+          // this is a Start of Paragraph, add number to it
+          numberOfSOP++;
+          s = s + numberOfSOP;
+        }
+        keys[1][s] = (keys[1][s] || 0) + 1;
+
+        //if(s == "?" || s == "." || s == "!") continue;
+
+        var build = function(js,s){
+          for (var j=js; j<= self.maxNGrams; j++) {
+            if(i+j <= textlen) {
+              var n = d.words[i+j-1].text;
+
+/*
+              if(self.useSynonyms && self.synonyms[n]){
+                // if this as a synonym
+                for(var ns = 0; ns < self.synonyms[n].length; ns++){
+                  var n2 = self.synonyms[n][ns];
+                  keys[j][s + " " + n2] = (keys[j][s + " " + n2] || 0) + 1;
+                  // add +1 for the original 
+                  if(n2 == n) continue; // same word
+                  if(j+1 <= self.maxNGrams)
+                    build(j+1,s + " " + n2);
+                }
+              }
+*/
+              s += " " + n; // only use number token now
+              if(n == "❯") break;
+              keys[j][s] = (keys[j][s] || 0) + 1;
+            } else break;
+          }
+        };
+        
+        if(self.maxNGrams > 1){
+          build(2,s);
+/*          
+          if(self.useSynonyms && self.synonyms[s]){
+            // if this as a synonym
+            for(var ns = 0; ns < self.synonyms[s].length; ns++){
+              var n2 = self.synonyms[s][ns];
+              keys[1][n2] = (keys[1][n2] || 0) + 1;
+              build(2,n2);
+            }
+          }
+*/
+        }
+
+      }      
+
+
+      // add the keys to the results set now (results = for all documents combined)
+      for (var k=1; k<= self.maxNGrams; k++) {
+        for (var i in keys[k]) {
+          if(keys[k][i] >= atLeast) {
+            var found = false;
+            var num = 0;
+            var i2 = i;
+            if(i[0] == "❯"){
+              var parts = i.split(" ");
+              num = parseInt(parts[0].slice(1)); // index of SOP
+              parts[0] = "❯";
+              i2 = parts.join(" ");
+            }
+            if(resultsMap[i2]){
+              // exists already, attach document
+              addDocument(d.id,resultsMap[i2],keys[k][i]);
+              resultsMap[i2].count += keys[k][i];
+              if(i2[0] == "❯") {
+                resultsMap[i2].index.push({n:num,d:d.id}); // add index of SOP
+                resultsMap[i2].index.sort(function(a, b) { return a.n - b.n} ); // 
+              }
+            }else{
+              var word = {"text":i2, "count":keys[k][i]};
+              if(i2[0] == "❯") word.index = [{n:num,d:d.id}];
+              addDocument(d.id,word,keys[k][i]);
+              results[k].push(word);                  
+              resultsMap[i2] = word;
+            }
+          }
+        }
+      }
+    }
+
+    var processResults = function(){
+      for (var k=1; k< self.maxNGrams+1; k++) {
+        results[k].sort(function(x,y) {return y.count - x.count;});//sorts results
+        
+        for (var i=0; i < results[k].length; i++) {
+          results[k][i].percent = (results[k][i].count / results[k][0].count*100.0);
+          results[k][i].n = k;
+          if(!results[k][i].tokens)
+              results[k][i].tokens = results[k][i].text.split(" ");
+        }
+      }
+    }
+
+    var delayDuration = 250;
+    var delay = delayDuration;
+    var mapNum = 0;
+
+    var rebuild = function(){
+      self.documents.map(function(d){
+        if(animated){
+          self.rebuildNGramList(results);
+          $timeout(function(){     
+            d.crawling = true;
+
+            processDocument(d);
+            processResults();
+            self.rebuildNGramList(results);
+            self.wordList = results;
+            self.rebuildMatchList();
+            self.getNextWords();
+
+            mapNum++;
+            if(mapNum >= self.documents.length){
+              self.rebuilding = false;    
+              self.needsRebuild = false;
+
+            }
+            $timeout(function(){
+              d.crawling = false;
+            },500);
+          },delay);      
+          
+          delay = delay + delayDuration;          
+        }else{
+          processDocument(d);
+        }
+      });
+      if(!animated){
+        processResults();
+        self.wordList = results;
+        self.rebuildMatchList();
+        self.getNextWords();
+      }
+
+    }
+    if(self.documents.length == 0){
+      self.rebuilding = false;    
+      self.needsRebuild = false;
+    }
+
+    rebuild();
+  };
+  
+  self.isGenerating = false;
+  self.wasGenerated = false;
+  self.waitAfterGenerating = 0;
+  self.generatedWords = 0;
+  self.singleSteps = 0;
+  self.waitSingleStepTimeout = 0;
+  self.pickedNextWord = null;
+  self.lastGeneratingMatchCount = 0;
+  self.generatingDelay = 200;
+  self.generatedWordsMax = 80;
+
+  self.isFastGenerating = false;
+  self.isFastGeneratingWait = 0;
+
+  self.generatingInterval = $interval(function(){
+    if(!self.isGenerating) return; // only when self.isGenerating
+    if(!self.isFastGenerating){
+      if(self.isFastGeneratingWait == 0){
+        self.isFastGeneratingWait = 10;
+      }else{
+        self.isFastGeneratingWait--;
+        return;
+      }
+    }
+    if(self.waitAfterGenerating){
+      self.waitAfterGenerating--;
+      return;
+    }
+    self.pickedNextWord = false;
+    if(self.waitSingleStepTimeout){
+      $timeout.cancel(self.waitSingleStepTimeout);
+      self.waitSingleStepTimeout = null;
+    }
+    if(self.nextSuggestions && self.nextSuggestions.length > 0){   
+      var n = JSON.parse(JSON.stringify(self.nextSuggestions));
+
+      var bestMatch = -1;
+      for(var i=0; i < n.length; i++){
+        bestMatch = Math.max(bestMatch, n[i].matches);
+      }
+      self.pickedNextWord = null;
+      
+      var lowerMatch = self.lastGeneratingMatchCount > bestMatch;
+      self.lastGeneratingMatchCount = bestMatch;
+      self.wasGenerated = true;
+      if(self.wasMark && self.generatedWords > self.generatedWordsMax){
+        // good time to make a mark
+        self.addNextWord({text:'\n',token:'\n'});
+        self.addNextWord({text:'❯',token:'❯'});
+        self.pauseGenerating();
+        self.generatedWords = 0;        
+      }else
+      if(!self.wasMark && ((bestMatch == 0 && self.generatedWords > self.generatedWordsMax) || (lowerMatch && self.generatedWords > self.generatedWordsMax*1.2))) {
+        // good time to make a mark
+        self.addNextWord({text:'\n',token:'\n'});
+        self.addNextWord({text:'❯',token:'❯'});
+        self.pauseGenerating();
+        self.generatedWords = 0;        
+      }else{
+        function pickNext(){
+          var picked = n[0];
+          // if there are multiple top items with same percent value, choose random
+
+          var upToIndex = 0;
+          for(var i=1; i < n.length; i++){
+            if(n[i].matches == n[0].matches && n[i].calc == n[0].calc) upToIndex = i; else break;
+          }
+          if(self.temp > 0){
+            picked = n[Math.floor(Math.random()*(upToIndex+1))];            
+          }
+          
+
+          for(var i=0; i < self.sortedMatching.sorted.length; i++){
+            var tn = self.sortedMatching.sorted[i].tokens;
+            if(tn.length > 0 && tn[tn.length-1] == picked.token){
+              self.pickedNextWord = self.sortedMatching.sorted[i];
+              break;
+            }
+          }
+          self.waitAfterGenerating = 10; 
+          self.waitSingleStepTimeout = $timeout(function(){
+            self.singleSteps = 0;
+            self.pickedNextWord = null;
+            self.waitAfterGenerating = 0;
+            self.waitSingleStepTimeout = null;
+            self.addNextWord(picked);   
+            self.generatedWords++;
+          },(self.isFastGenerating ? 20 : self.generatingDelay)*2);
+
+        }
+        if(self.isSingleGenerating){          
+          if(self.singleSteps == 1){
+            pickNext();
+          }else{  
+            self.singleSteps = 0;            
+          }
+        }else{
+          pickNext();
+        }
+      }
+    }
+  },20);
+
+
+  self.startGenerating = function (steps){
+    self.isGenerating = true;
+    if(self.isSingleGenerating) self.singleSteps = 1;
+  };
+  self.pauseGenerating = function (){
+    self.isGenerating = false;
+    self.isFastGenerating = false;
+    self.isSingleGenerating = false;
+  };
+  self.restartGenerating = function(){
+    self.wasGenerated = false;
+    self.startGenerating();
+  };
+
+
+
+  self.saveCollection = function(ev){
+    var data = {};
+    data.documents = JSON.parse(angular.toJson(self.documents));
+    for(var i=0; i < data.documents.length; i++){
+      for(var k in data.documents[i]){
+        if(k != "text" && k != "id") delete data.documents[i][k];
+      }
+    }  
+    data.input = JSON.parse(angular.toJson(self.input));
+    data.prompt = self.prompt;
+    data.promptDefault = self.promptDefault;
+    data.task = self.task;
+
+    data.maxNext = self.maxNext;
+    data.temp = self.temp;
+    data.context = self.context;
+    data.nWeight = self.nWeight;
+    data.ngram = self.ngram;
+    data.showngram = self.showngram;
+
+    var file = new Blob([JSON.stringify(data, null, 2)], {type: "text/json;charset=utf-8"});  
+    saveAs(file,"Soekia_Kollektion.json");
+  };
+
+  self.loadCollection = function(e,ev){
+    if(e.files.length == 0) return;
+    var filename = e.files[0].name;
+    var file = e.files[0];
+    var reader = new FileReader();
+    reader.onload = function(data){
+      try{
+        var data = JSON.parse(data.target.result);
+
+        var confirm = $mdDialog.confirm()
+          .title(self.trans('ASKLOADNEWCOLLECTION'))
+          .textContent(self.trans('CONFIRMDELCOL'))
+          .ariaLabel(self.trans('DELETE'))
+          .targetEvent(ev)
+          .ok(self.trans('CONTINUE'))
+          .cancel(self.trans('CANCEL'));
+
+        function load(){
+          self.documents = data.documents;
+          for(var i=0; i < self.documents.length; i++){
+            self.documents[i].id = "";
+          }
+          for(var i=0; i < self.documents.length; i++){
+            self.documents[i].id = self.getNextDocumentID();
+          }
+          
+          if(data.input){
+            self.input = JSON.parse(JSON.stringify(data.input));
+          }else self.input = [];
+
+          if(data.prompt){
+            self.prompt = data.prompt;
+          }else self.prompt = "";
+
+          if(data.promptDefault){
+            self.promptDefault = data.promptDefault;
+          }else self.promptDefault = "";
+
+          self.promptSplit = null;
+          if(data.task){
+            self.task = data.task;
+          }else self.task = "";
+
+          if(data.prompt == "" && self.task != ""){
+            data.prompt = self.task;
+            self.task = "";
+          }
+
+          if(data.maxNext){
+            self.maxNext = data.maxNext;
+          }else self.maxNext = 12;
+          if(data.temp){
+            self.temp = data.temp;
+          }else self.temp = 60;
+          if(data.context){
+            self.context = data.context;
+          }else self.context = 1.0;
+          if(data.nWeight){
+            self.nWeight = data.nWeight;
+          }else self.nWeight = 1.0;
+          if(data.ngram){
+            self.ngram = data.ngram;
+          }else self.ngram = 5;
+          if(data.showngram){
+            self.showngram = data.showngram;
+          }else self.showngram = 3;
+
+          self.showMusicPlayer = false;
+
+          self.firstPrompt = true;
+          self.isGenerating = false;
+
+          $timeout(function() {
+            self.updateDocuments();
+            self.rebuildNGrams();
+            self.rebuildMatchList();            
+          }, 0);
+        };
+
+        if(self.documents.length > 0)
+          $mdDialog.show(confirm).then(load,function(){});
+        else 
+          load();
+
+
+      }catch(e){
+        var alert = $mdDialog.alert()
+        .title(self.trans('ERROR'))
+        .textContent(self.trans('ERRORLOADINGFILE'))
+        .ariaLabel(self.trans('ERROR'))
+        .ok(self.trans('OK'));
+        $mdDialog.show(alert);
+      }
+    };
+    reader.readAsText(file);
+    e.value = "";
+  };
+
+  self.loadPredefined = function(name,ev){
+    var deferred = $q.defer();
+    var confirm = $mdDialog.confirm()
+          .title(self.trans('ASKLOADNEWCOLLECTION'))
+          .textContent(self.trans('CONFIRMDELCOL'))
+          .ariaLabel(self.trans('DELETE'))
+          .targetEvent(ev)
+          .ok(self.trans('CONTINUE'))
+          .cancel(self.trans('CANCEL'));
+
+    function load(){
+      if(name == "Neu"){
+        self.predefined.push({name:"Neu",documents:[],promptDefault:""});
+      }
+      for(var i=0; i < self.predefined.length; i++){
+        if(self.predefined[i].name == name){
+          self.documents = self.predefined[i].documents;
+          if(self.predefined[i].input){
+            self.input = JSON.parse(JSON.stringify(self.predefined[i].input));
+          }else self.input = [];
+          if(self.predefined[i].prompt){
+            self.prompt = self.predefined[i].prompt;
+          }else self.prompt = "";
+
+          if(self.predefined[i].promptDefault){
+            self.promptDefault = self.predefined[i].promptDefault;
+          }else self.promptDefault = "";
+
+          if(self.predefined[i].task){
+            self.task = self.predefined[i].task;
+          }else self.task = "";
+
+          if(self.predefined[i].maxNext){
+            self.maxNext = self.predefined[i].maxNext;
+          }else self.maxNext = 12;
+          if(self.predefined[i].temp){
+            self.temp = self.predefined[i].temp;
+          }else self.temp = 60;
+          if(self.predefined[i].context){
+            self.context = self.predefined[i].context;
+          }else self.context = 1.0;
+          if(self.predefined[i].nWeight){
+            self.nWeight = self.predefined[i].nWeight;
+          }else self.nWeight = 1.0;
+          if(self.predefined[i].ngram){
+            self.ngram = self.predefined[i].ngram;
+          }else self.ngram = 5;
+          if(self.predefined[i].showngram){
+            self.showngram = self.predefined[i].showngram;
+          }else self.showngram = 3;
+
+          self.promptSplit = null;
+          self.firstPrompt = true;
+          self.isGenerating = false;
+
+          self.showMusicPlayer = name == "default4"; // only for abc example
+
+          deferred.resolve();
+          $timeout(function() {
+            self.updateDocuments();
+            self.rebuildNGrams();
+            self.rebuildMatchList();            
+          }, 0);
+          return;
+        }
+      }
+    };
+
+    if(self.documents.length > 0)
+      $mdDialog.show(confirm).then(load,function(){});
+    else 
+      load();
+    
+
+    return deferred.promise;
+  };
+
+  self.showMusicPlayer = false;
+
+  self.playABCMusic = function(ev){
+    self.dialogOpen = true;
+    var synthControl;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+        synthControl.pause();
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.self = self;
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+        $timeout(function(){
+          var abcContent = document.getElementById('inputBox').innerText;
+
+          var abcOptions = {
+            add_classes: true,
+            responsive: "resize"
+          };
+
+          function CursorControl() {
+            var self = this;
+
+            self.onReady = function() {
+            };
+            self.onStart = function() {
+              var svg = document.querySelector("#abcPlayerPaper svg");
+              var cursor = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              cursor.setAttribute("class", "abcjs-cursor");
+              cursor.setAttributeNS(null, 'x1', 0);
+              cursor.setAttributeNS(null, 'y1', 0);
+              cursor.setAttributeNS(null, 'x2', 0);
+              cursor.setAttributeNS(null, 'y2', 0);
+              svg.appendChild(cursor);
+
+            };
+            self.beatSubdivisions = 2;
+            self.onBeat = function(beatNumber, totalBeats, totalTime) {
+            };
+            self.onEvent = function(ev) {
+              if (ev.measureStart && ev.left === null)
+                return; // this was the second part of a tie across a measure line. Just ignore it.
+
+              var lastSelection = document.querySelectorAll("#abcPlayerPaper svg .highlight");
+              for (var k = 0; k < lastSelection.length; k++)
+                lastSelection[k].classList.remove("highlight");
+
+              for (var i = 0; i < ev.elements.length; i++ ) {
+                var note = ev.elements[i];
+                for (var j = 0; j < note.length; j++) {
+                  note[j].classList.add("highlight");
+                }
+              }
+
+              var cursor = document.querySelector("#abcPlayerPaper svg .abcjs-cursor");
+              if (cursor) {
+                cursor.setAttribute("x1", ev.left - 2);
+                cursor.setAttribute("x2", ev.left - 2);
+                cursor.setAttribute("y1", ev.top);
+                cursor.setAttribute("y2", ev.top + ev.height);
+              }
+            };
+            self.onFinished = function() {
+              var els = document.querySelectorAll("svg .highlight");
+              for (var i = 0; i < els.length; i++ ) {
+                els[i].classList.remove("highlight");
+              }
+              var cursor = document.querySelector("#abcPlayerPaper svg .abcjs-cursor");
+              if (cursor) {
+                cursor.setAttribute("x1", 0);
+                cursor.setAttribute("x2", 0);
+                cursor.setAttribute("y1", 0);
+                cursor.setAttribute("y2", 0);
+              }
+            };
+          }
+
+          var cursorControl = new CursorControl();
+
+          function setTune(userAction) {
+            synthControl.disable(true);
+            var visualObj = ABCJS.renderAbc("abcPlayerPaper", abcContent, abcOptions)[0];
+
+            var midiBuffer = new ABCJS.synth.CreateSynth();
+            midiBuffer.init({
+              visualObj: visualObj,
+            }).then(function (response) {
+              console.log(response);
+              if (synthControl) {
+                synthControl.setTune(visualObj, userAction).then(function (response) {
+                  console.log("Audio successfully loaded.")
+                }).catch(function (error) {
+                  console.warn("Audio problem:", error);
+                });
+              }
+            }).catch(function (error) {
+              console.warn("Audio problem:", error);
+            });
+          }
+
+          if (ABCJS.synth.supportsAudio()) {
+            synthControl = new ABCJS.synth.SynthController();
+            synthControl.load("#abcPlayerAudio", cursorControl, {displayLoop: true, displayRestart: true, displayPlay: true, displayProgress: true, displayWarp: true});
+          } else {
+            document.querySelector("#abcPlayerAudio").innerHTML = "<div class='audio-error'>Audio is not supported in this browser.</div>";
+          }
+          setTune(false);
+
+        },500);
+      },
+      templateUrl: 'abcMusicPlayer.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+    });    
+  };
+
+  self.loadDocuments();
+  self.loadSettings();
+
+  self.rebuildNGrams();
+  
+
+  self.copyTextToClipboard = function(text){
+    text = text ? text : ((self.task != '' ? self.task+" \n\n" : '')+document.getElementById('inputBox').innerText);
+
+    function fallbackCopyTextToClipboard(text) {
+      var textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Avoid scrolling to bottom
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        var alert = $mdDialog.alert()
+        .title(self.trans('HINT'))
+        .textContent(self.trans('COPIEDTOCLIPBOARD'))
+        .ariaLabel(self.trans('COPIEDTOCLIPBOARD'))
+        .ok('OK');
+        $mdDialog.show(alert);
+
+        console.log('Fallback: Copying text command was ' + msg);
+      } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+      }
+
+      document.body.removeChild(textArea);
+    }
+    if (!navigator.clipboard) {
+      fallbackCopyTextToClipboard(text);
+      return;
+    }
+    navigator.clipboard.writeText(text).then(function() {
+      console.log('Async: Copying to clipboard was successful!');
+      var alert = $mdDialog.alert()
+      .title(self.trans('HINT'))
+      .textContent(self.trans('COPIEDTOCLIPBOARD'))
+      .ariaLabel(self.trans('COPIEDTOCLIPBOARD'))
+      .ok('OK');
+      $mdDialog.show(alert);
+
+    }, function(err) {
+      console.error('Async: Could not copy text: ', err);
+    });
+  };
+          
+}]);
+
+app.config(function($mdThemingProvider) {
+  $mdThemingProvider.theme('default')
+    .primaryPalette('indigo')
+    .accentPalette('pink');
+});
+    </script> 
+</div></div>
+</body>
+</html>
