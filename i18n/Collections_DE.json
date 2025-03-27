@@ -511,5 +511,152 @@
         "id": "BH",
         "text": "Beschreibung\nBienen sind faszinierende Geschöpfe, die eine wichtige Rolle in der Natur spielen. Sie sind bekannt für ihren Fleiß und ihre Fähigkeit, Blütenbestäubung zu betreiben, was für die Produktion von vielen Früchten, Gemüse und Nüssen, die wir essen, unerlässlich ist. Bienen leben in gut organisierten Gemeinschaften, die Bienenstöcke genannt werden. In jedem Bienenstock gibt es drei Arten von Bienen: die Königin, die Arbeiterinnen und die Drohnen.\n\nDie Königin ist das Herz des Bienenstocks. Ihre Hauptaufgabe ist es, Eier zu legen, aus denen die nächste Generation von Bienen schlüpft. Es gibt nur eine Königin pro Bienenstock, und sie kann bis zu fünf Jahre leben. Die Arbeiterinnen sind weibliche Bienen, die nicht fortpflanzungsfähig sind. Sie erledigen alle anderen Arbeiten im Bienenstock, wie das Sammeln von Nektar und Pollen von Blumen, die Herstellung von Honig, das Bauen von Waben, die Pflege der Brut und den Schutz des Bienenstocks. Arbeiterinnen leben nur einige Wochen bis zu wenigen Monaten. Drohnen sind männliche Bienen, deren einzige Aufgabe es ist, mit einer neuen Königin zu paaren; sie leben nur etwa acht Wochen.\n\nBienen kommunizieren auf erstaunliche Weise miteinander. Eine der bemerkenswertesten Kommunikationsformen ist der \"Schwänzeltanz\", mit dem Arbeiterinnen anderen Bienen den Weg zu entfernten Nahrungsquellen zeigen. Dieser Tanz gibt Richtung und Entfernung zur Nahrung an und ist ein faszinierendes Beispiel für die Komplexität der Bienensprache.\n\nNeben ihrer Bedeutung für die Bestäubung sind Bienen auch für die Produktion von Honig bekannt, einem süßen und nahrhaften Lebensmittel, das sie aus dem Nektar von Blumen herstellen. Honig wird im Bienenstock gelagert und dient den Bienen als Nahrungsquelle, besonders während der kalten Monate, wenn keine Blumen blühen.\n\nBienen spielen auch eine entscheidende Rolle für die Umwelt und die menschliche Landwirtschaft. Ohne Bienen und ihre Bestäubungsarbeit würden viele Pflanzen, einschließlich derer, die viele wichtige Lebensmittel produzieren, nicht blühen und Früchte tragen. In den letzten Jahren sind Bienenpopulationen durch verschiedene Bedrohungen wie Krankheiten, Schädlinge, den Verlust von Lebensräumen und den Einsatz von Pestiziden in der Landwirtschaft zurückgegangen. Dies macht den Schutz von Bienen und die Förderung ihrer Lebensräume wichtiger denn je.\n\nInsgesamt sind Bienen unglaubliche Tiere, deren harte Arbeit und Organisation uns nicht nur Nahrung und natürliche Schönheit bringt, sondern auch das Gleichgewicht unseres Ökosystems aufrechterhält. Ihre Fähigkeit, als Gemeinschaft zu arbeiten und komplexe Aufgaben zu erfüllen, macht sie zu einem bewundernswerten Beispiel für Zusammenarbeit und Ausdauer in der Tierwelt."
       }
-    ]}
+    ]},
+
+    {
+      "name":"default6",
+      "task":"Spiele TicTacToe",
+      "prompt":"Spiele TicTacToe",
+      "promptDefault":"Spiele TicTacToe",
+      "documents":[
+      {
+        "id": "A",
+        "text": "X32\nO22\nX12\nO11\nX33\nO13\nX31\n"
+      },
+      {
+        "id": "B",
+        "text": "X11\nO33\nX31\nO13\nX22\nO21\nX12\nO32\nX23\n"
+      },
+      {
+        "id": "C",
+        "text": "X11\nO13\nX32\nO23\nX21\nO33\n"
+      },
+      {
+        "id": "D",
+        "text": "X13\nO12\nX32\nO23\nX31\nO21\nX33\n"
+      },
+      {
+        "id": "E",
+        "text": "X32\nO31\nX12\nO21\nX22\n"
+      },
+      {
+        "id": "F",
+        "text": "X32\nO22\nX23\nO33\nX13\nO12\nX31\nO21\nX11\n"
+      },
+      {
+        "id": "G",
+        "text": "X11\nO22\nX12\nO13\nX31\nO21\nX23\nO32\nX33\n"
+      },
+      {
+        "id": "H",
+        "text": "X11\nO12\nX21\nO22\nX23\nO13\nX33\nO32\n"
+      },
+      {
+        "id": "I",
+        "text": "X31\nO33\nX32\nO11\nX22\nO12\nX23\nO13\n"
+      },
+      {
+        "id": "J",
+        "text": "X13\nO31\nX12\nO32\nX21\nO33\n"
+      },
+      {
+        "id": "K",
+        "text": "X22\nO32\nX12\nO31\nX21\nO23\nX13\nO33\n"
+      },
+      {
+        "id": "L",
+        "text": "X13\nO22\nX23\nO31\nX12\nO32\nX33\n"
+      },
+      {
+        "id": "M",
+        "text": "X13\nO32\nX33\nO12\nX21\nO22\n"
+      },
+      {
+        "id": "N",
+        "text": "X32\nO23\nX21\nO11\nX12\nO22\nX31\nO33\n"
+      },
+      {
+        "id": "O",
+        "text": "X12\nO11\nX33\nO23\nX13\nO21\nX22\nO32\nX31\n"
+      },
+      {
+        "id": "P",
+        "text": "X21\nO31\nX12\nO11\nX32\nO23\nX33\nO22\nX13\n"
+      },
+      {
+        "id": "Q",
+        "text": "X11\nO31\nX13\nO21\nX33\nO12\nX23\n"
+      },
+      {
+        "id": "R",
+        "text": "X23\nO21\nX22\nO32\nX13\nO12\nX31\n"
+      },
+      {
+        "id": "S",
+        "text": "X31\nO11\nX21\nO12\nX22\nO23\nX33\nO32\nX13\n"
+      },
+      {
+        "id": "T",
+        "text": "X23\nO13\nX21\nO22\nX33\nO31\n"
+      },
+      {
+        "id": "U",
+        "text": "X11\nO13\nX31\nO21\nX12\nO23\nX22\nO33\n"
+      },
+      {
+        "id": "V",
+        "text": "X32\nO12\nX21\nO11\nX33\nO22\nX23\nO31\nX13\n"
+      },
+      {
+        "id": "W",
+        "text": "X11\nO21\nX32\nO22\nX23\nO33\nX31\nO12\nX13\n"
+      },
+      {
+        "id": "X",
+        "text": "X31\nO11\nX13\nO32\nX23\nO12\nX21\nO22\n"
+      },
+      {
+        "id": "Y",
+        "text": "X33\nO11\nX13\nO22\nX21\nO12\nX32\nO31\nX23\n"
+      },
+      {
+        "id": "Z",
+        "text": "X32\nO21\nX23\nO12\nX22\nO31\nX13\nO33\nX11\n"
+      }
+      ]
+    },
+
+    {
+      "name": "default7",
+      "task": "Spiele eine Partie Schach",
+      "prompt": "Spiele eine Partie Schach",
+      "promptDefault": "Spiele eine Partie Schach",
+      "documents": [
+        {
+          "id": "A",
+          "text": "e4 c5\nNc3 g6\nf4 Bg7\nNf3 d6\nBb5 Bd7\nBxd7 Qxd7\nO-O Nc6\nd3 Nf6\nQe1 O-O\nh3 Rab8\nQh4 b5\nf5 b4\nNe2 gxf5\nBh6 fxe4\nNg5 exd3\nBxg7 Kxg7\nRxf6 Kxf6\nRf1 Ke5\nQe4"
+        },
+        {
+          "id": "B",
+          "text": "e4 c5\nNf3 Nc6\nd4 g6\nBb5 cxd4\nBxc6 bxc6\nNxd4 Bg7\nNc3 e6\nO-O Qb6\nNf3 Ne7\nBe3 Qxb2\nBd4 Bxd4\nQxd4 O-O\nRab1 Qxc2\nRfc1 c5\nQf6 Qb2\nRxb2 d5\nQxe7"
+        },
+        {
+          "id": "C",
+          "text": "e4 e5\nNf3 d5\nexd5 Qxd5\nNc3 Qe6\nb3 Nc6\nBc4 Bd6\nBxe6 Bxe6\nO-O O-O-O\nBb2 f5\nNb5 Nf6\nNxd6 cxd6\nRe1 e4\nNd4 Nxd4\nBxd4 Kb8\nBxf6 gxf6\nd3 Rhg8\ndxe4 fxe4\nRxe4 Bf5\nRf4 Rg5\nh4 Rh5\nQxh5"
+        },
+        {
+          "id": "D",
+          "text": "d4 Nf6\nBg5 Ne4\nBf4 d5\ne3 e6\nBd3 Nf6\nNf3 c5\nc3 Nc6\nO-O Be7\nh3 O-O\nNbd2 c4\nBc2 b5\ne4 b4\ne5 Nd7\nh4 Ba6\nNg5 b3\nBxh7 Kh8\nQh5 Re8\nNxf7"
+        },
+        {
+          "id": "E",
+          "text": "e4 e6\nd4 d5\nNc3 c5\ndxc5 Bxc5\nexd5 Nf6\nBc4 Qb6\nQe2 O-O\nNa4 Qb4\nNc3 exd5\nBb5 Bd7\nBxd7 Nbxd7\nQf3 d4\na3 Qb6\nNa4 Qa5\nb4 Qxa4\nbxc5 Qxc2\nNh3 Rfe8\nBe3 Qc3\nKe2 d3"
+        },
+        {
+          "id": "F",
+          "text": "e4 d6\nd4 Nf6\nNc3 g6\nBe3 Bg7\nQd2 Ng4\nBf4 e5\nBg5 f6\nBe3 Nxe3\nQxe3 Nc6\nd5 Nd4\nQd2 O-O\nNge2 f5\nNxd4 exd4\nNe2 fxe4\nNxd4 Qf6\nNb3 Qxb2\nRd1 Bc3\nQxc3 Qxc3\nRd2 e3\nfxe3 Qxe3\nKd1 Bg4"
+        }
+      ]
+
+    }
   ]

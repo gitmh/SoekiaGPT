@@ -21,10 +21,8 @@
   <meta name="twitter:title" content="SoekiaGPT - Das didaktische Sprachmodell">
   <meta name="twitter:description" content="SoekiaGPT ist ein Textgenerator speziell für den Unterricht. Mit SoekiaGPT kannst Du hinter die Kulissen schauen und damit einige Grundprinzipien von Textgeneratoren wie ChatGPT kennenlernen.">
   <meta name="twitter:image" content="https://soekia.ch/GPT/soekiaGPT.png">
-
-
 </head>
-  <body ng-controller="eduSLMEngineCtl as self" ng-cloak style="overflow:hidden">
+<body ng-controller="eduSLMEngineCtl as self" ng-cloak style="overflow:hidden">
   <div id="wrapper" style="overflow:auto;width:100%;height:100%;position: absolute;left: 0;" ng-style="{'overflow':self.showInsideButton ? 'hidden':'auto'}">
     <div layout="row" style="height:100%">
     <div id="inputPanel" class="inputPanel" ng-class="{'hideInside':self.showInsideButton}" layout="column" layout-align="start start">
@@ -96,6 +94,23 @@
                 abc-Music-Player
               </md-button>
             </div>
+
+            <div ng-if="self.showTicTacToePlayer && self.input.length > 0 && !self.isGenerating" style="position: absolute; left: 0px; bottom: 0;">
+              <md-button ng-click="self.playTicTacToe($event)" style="text-transform: none;margin:0">
+                <ng-md-icon style="fill:black" icon="videocam"></ng-md-icon>
+                <ng-md-icon style="fill:black" icon="play_arrow"></ng-md-icon>
+                TicTacToe-Player
+              </md-button>
+            </div>
+
+            <div ng-if="self.showChessPlayer && self.input.length > 0 && !self.isGenerating" style="position: absolute; left: 0px; bottom: 0;">
+              <md-button ng-click="self.playChess($event)" style="text-transform: none;margin:0">
+                <ng-md-icon style="fill:black" icon="videocam"></ng-md-icon>
+                <ng-md-icon style="fill:black" icon="play_arrow"></ng-md-icon>
+                Chess-Player
+              </md-button>
+            </div>
+
           </div>
 
           <div ng-if="self.isManualMode && self.input.length > 0" style="padding:0.5em;padding-top:0;padding-right: 0;padding-left:0;user-select:none;-webkit-user-select:none" layout="row">
@@ -163,12 +178,8 @@
           
             <span flex style="line-height:40px;white-space:nowrap">{{'SUGESSTIONS' | trans}}</span>
 
-            <md-button class="documentsButton" style="min-width:1em;margin:0;height:38px;margin-right: 8px;" ng-style="{'background':self.useSynonyms ? '':'rgba(0,0,0,0.05)'}" ng-class="{'md-raised':!self.useSynonyms, 'md-sunk':self.useSynonyms}" ng-click="self.setUseSynonyms(!self.useSynonyms)"><md-tooltip md-direction="bottom">{{'USESYNONYMS' | trans}}</md-tooltip><ng-md-icon style="fill:white;" class="rotate270" icon="usb"></ng-md-icon></md-button>
+            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:38px" ng-click="self.showTempSettings($event)"><md-tooltip md-direction="bottom">{{'EDITSUGGESTIONS' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="settings"></ng-md-icon></md-button>
 
-            <md-button class="documentsButton" style="min-width:1em;margin:0;height:38px;margin-right: 8px;" ng-style="{'background':self.useDistance ? '':'rgba(0,0,0,0.05)'}" ng-class="{'md-raised':!self.useDistance, 'md-sunk':self.useDistance}" ng-click="self.setUseDistance(!self.useDistance)"><md-tooltip md-direction="bottom">{{'INCLUDESIMILARWORDS' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="select_all"></ng-md-icon></md-button>
-
-            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:38px" ng-click="self.setMatchingSort(self.matchingSort == 'alpha' ? 'value':'alpha')"><md-tooltip md-direction="bottom">{{'ORDERLIST' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="sort_by_alpha" ng-if="self.matchingSort == 'alpha'"></ng-md-icon><ng-md-icon style="fill:white" icon="sort" ng-if="self.matchingSort == 'value'"></ng-md-icon></md-button>
-                      
           </span>
 
         </md-toolbar>
@@ -195,9 +206,9 @@
         <md-list md-virtual-repeat-container id="indexList" flex md-top-index="self.indexMatchingTop" style="padding:0;overflow-y:hidden; overflow-x: hidden;background:#fff0f0" >
           <md-list-item class="md-2-line" style="margin-left:-24px;" md-virtual-repeat="item in self.sortedMatching" md-on-demand>
             <div class="md-list-item-text" layout="column">                        
-              <div style="position:relative;padding-left:1em;margin-top: 10px;margin-bottom: 10px;" ng-class="{'selected':self.isSelected(item), 'picked':self.pickedNextWord == item}">
+              <div style="position:relative;padding-left:1em;margin-top: 10px;margin-bottom: 10px;" ng-class="{'selected':false && self.isSelected(item), 'picked':self.pickedNextWord == item}">
                 <h3 style="white-space: normal;" layout="row" layout-align="start center">
-                  <span style="background: #f3a000;color:white; padding: 0.2em; display: inline-block;font-weight: 400; font-size: 14px; border-radius: 4px;">{{item.n}}er</span>
+                  <span style="background: #f3a000;color:white; padding: 0.2em; display: inline-block;font-weight: 400; font-size: 14px; border-radius: 4px;">{{self.currentLanguage == 'DE' ? item.n+'er' : item.n}}</span>
                   <span style="margin-left: 0.25em;" ng-bind-html="self.getTokenString(item)">
                   </span>
                 </h3>
@@ -262,10 +273,33 @@
           
             <span flex style="line-height:40px;white-space:nowrap">{{'NGRAMMS' | trans}}</span>
 
-            <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:2em;margin:0;height:38px;margin-right: 8px;" ng-click="self.ngram = self.ngram - 1; self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()" ng-disabled="self.ngram <= 1" aria-label="-1"><ng-md-icon style="fill:white" icon="exposure_neg_1" ></ng-md-icon></md-button>
-
+            <md-menu style="margin:0">
+              <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:2em;margin:0;height:38px;margin-right: 8px; color:white" ng-click="$mdMenu.open($event)">
+              N <= {{self.ngram}}</md-button>
+              <md-menu-content>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 1;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 1</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 2;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 2</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 3;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 3</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 4;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 4</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 5;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 5</md-button>
+                </md-menu-item>
+                <md-menu-item>
+                  <md-button ng-click="self.ngram = 6;self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()">N <= 6</md-button>
+                </md-menu-item>
+              </md-menu-content>
+            </md-menu>
+<!--
             <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:2em;margin:0;height:38px;margin-right: 8px;" ng-click="self.ngram = self.ngram + 1; self.showngram = self.ngram; self.rebuildMatchList(); self.getNextWords()" ng-disabled="self.ngram >= 6" aria-label="+1"><ng-md-icon style="fill:white" icon="exposure_plus_1"></ng-md-icon></md-button>
-
+-->
 
             <md-button class="md-raised documentsButton" style="background:rgba(0,0,0,0.05);min-width:1em;margin:0;height:38px" ng-click="self.setNgramSort(self.ngramSort == 'alpha' ? 'value':'alpha')"><md-tooltip md-direction="bottom">{{'ORDERLIST' | trans}}</md-tooltip><ng-md-icon style="fill:white;" icon="sort_by_alpha" ng-if="self.ngramSort == 'alpha'"></ng-md-icon><ng-md-icon style="fill:white" icon="sort" ng-if="self.ngramSort == 'value'"></ng-md-icon></md-button>
                       
@@ -280,12 +314,12 @@
 
         </md-toolbar>
         <div layout="row" layout-align="center center" layout-wrap style="background: #fffef0;margin-right: -1em">
-          <md-button ng-if="self.ngram > 0" ng-click="self.showngram = 1; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 1}" style="margin-left:0;min-width: 2em;    text-transform: none;">1er<md-tooltip>{{self.wordList[1].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
-          <md-button ng-if="self.ngram > 1" ng-click="self.showngram = 2; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 2}" style="margin-left:0;min-width: 2em;    text-transform: none;">2er<md-tooltip>{{self.wordList[2].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
-          <md-button ng-if="self.ngram > 2" ng-click="self.showngram = 3; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 3}" style="margin-left:0;min-width: 2em;    text-transform: none;">3er<md-tooltip>{{self.wordList[3].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
-          <md-button ng-if="self.ngram > 3" ng-click="self.showngram = 4; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 4}" style="margin-left:0;min-width: 2em;    text-transform: none;">4er<md-tooltip>{{self.wordList[4].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
-          <md-button ng-if="self.ngram > 4" ng-click="self.showngram = 5; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 5}" style="margin-left:0;min-width: 2em;    text-transform: none;">5er<md-tooltip>{{self.wordList[5].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
-          <md-button ng-if="self.ngram > 5" ng-click="self.showngram = 6; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 6}" style="margin-left:0;min-width: 2em;    text-transform: none;">6er<md-tooltip>{{self.wordList[6].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 0" ng-click="self.showngram = 1; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 1}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '1er' : '1'}}<md-tooltip>{{self.wordList[1].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 1" ng-click="self.showngram = 2; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 2}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '2er' : '2'}}<md-tooltip>{{self.wordList[2].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 2" ng-click="self.showngram = 3; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 3}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '3er' : '3'}}<md-tooltip>{{self.wordList[3].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 3" ng-click="self.showngram = 4; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 4}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '4er' : '4'}}<md-tooltip>{{self.wordList[4].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 4" ng-click="self.showngram = 5; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 5}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '5er' : '5'}}<md-tooltip>{{self.wordList[5].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
+          <md-button ng-if="self.ngram > 5" ng-click="self.showngram = 6; self.rebuildMatchList()" ng-class="{'md-yellow md-hue-0 md-raised':self.showngram == 6}" style="margin-left:0;min-width: 2em;    text-transform: none;">{{self.currentLanguage == 'DE' ? '6er' : '6'}}<md-tooltip>{{self.wordList[6].length}} {{'ENTRIES' | trans}}</md-tooltip></md-button>
 
         </div>
         <md-list md-virtual-repeat-container id="nGramList" flex style="padding:0;overflow-y:hidden; overflow-x: hidden;background:#fffef0" >
@@ -384,16 +418,28 @@
                     <ng-md-icon style="fill:white" icon="cloud_circle"></ng-md-icon>
                   </md-button>
 
+                  <md-button aria-label="Affen" class="md-fab md-raised md-mini md-accent documentsButton" 
+                             ng-click="self.loadPredefined('default5',$event)" style="background:#17b691;">
+                    <md-tooltip md-direction="left">{{'INTELLIGENTAPES' | trans}}</md-tooltip>
+                    <ng-md-icon class="rotate45" style="fill:white" icon="pets"></ng-md-icon>
+                  </md-button>
+
                   <md-button aria-label="ABCMusik" class="md-fab md-raised md-mini md-accent documentsButton" 
                              ng-click="self.loadPredefined('default4',$event)" style="background:#17b691;">
                     <md-tooltip md-direction="left">{{'MUSICABC' | trans}}</md-tooltip>
                     <ng-md-icon style="fill:white" icon="queue_music"></ng-md-icon>
                   </md-button>
 
-                  <md-button aria-label="Affen" class="md-fab md-raised md-mini md-accent documentsButton" 
-                             ng-click="self.loadPredefined('default5',$event)" style="background:#17b691;">
-                    <md-tooltip md-direction="left">{{'INTELLIGENTAPES' | trans}}</md-tooltip>
-                    <ng-md-icon class="rotate45" style="fill:white" icon="pets"></ng-md-icon>
+                  <md-button aria-label="TicTacToe" class="md-fab md-raised md-mini md-accent documentsButton"
+                             ng-click="self.loadPredefined('default6',$event)" style="background:#17b691;">
+                    <md-tooltip md-direction="left">{{'TICTACTOE' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="grid_on"></ng-md-icon>
+                  </md-button>
+
+                  <md-button aria-label="Chess" class="md-fab md-raised md-mini md-accent documentsButton"
+                             ng-click="self.loadPredefined('default7',$event)" style="background:#17b691;">
+                    <md-tooltip md-direction="left">{{'CHESS' | trans}}</md-tooltip>
+                    <ng-md-icon style="fill:white" icon="grain"></ng-md-icon>
                   </md-button>
           
                 </md-fab-actions>
@@ -464,7 +510,7 @@
               <div flex style="overflow:hidden;font-size:70%" ng-bind-html="d.content">
               </div>
 
-              <div ng-if="!self.firstPrompt && self.documentContext && self.documentContext[d.id]" ng-click="clicked = !clicked">
+              <div ng-if="self.usePromptCalculations && !self.firstPrompt && self.documentContext && self.documentContext[d.id]" ng-click="clicked = !clicked">
                 <md-progress-linear style="height:8px; overflow:hidden; margin-top: 8px" class="md-accent" md-mode="determinate" ng-value="self.documentContext[d.id]"></md-progress-linear>
                 <md-tooltip md-autohide md-visible="clicked">{{'DOCUMENTCONTEXT' | trans:(self.documentContext[d.id] == 1 ? 0 : self.documentContext[d.id])+'%'}}<br>{{self.getDocumentContextString(d.id)}}</md-tooltip>
               </div>
@@ -550,37 +596,20 @@
             {{'TEMPERATUREDESC' | trans}}
           </p>
 
-<!--
-          <p style="margin-top:2em"><b>{{'CONTEXT' | trans}}</b></p>
-          <div layout="column">
-            <md-slider-container style="margin-top:-0.5em;margin-bottom:-0.5em">
-              <md-slider step="0.05" min="0" max="5.0" ng-model="self.context" ng-change="self.getNextWords()" aria-label="Context" class="md-warn">
-            </md-slider-container>       
+          <p style="margin-top:2em"><b>{{'ADDITIONALSETTINGS' | trans}}</b></p>
+          <div layout="row" layout-align="start center">
+            <md-switch class="md-warn" style="margin:0;margin-right:1em" ng-model="self.usePromptCalculations" ng-change="self.setUsePromptCalculations(self.usePromptCalculations)"></md-switch>
+            <span style="cursor:pointer" ng-click="self.setUsePromptCalculations(!self.usePromptCalculations)">{{'USESPROMPTCONTEXT' | trans}}</span>
           </div>  
-          <div layout="row" layout-align="space-between center" style="user-select:none;-webkit-user-select:none;margin-left: 0.2em; margin-right: 0.2em; font-size: 80%; margin-top: -0.5em;">
-            <span>{{'LOW' | trans}}</span>
-            <span>{{self.context}}</span>
-            <span>{{'HIGH' | trans}}</span>
-          </div>
-          <p>
-            {{'CONTEXTDESC' | trans}}            
-          </p>
-          
-          <p style="margin-top:2em"><b>n-Gramm-Gewicht</b></p>
-          <div layout="column">
-            <md-slider-container style="margin-top:-0.5em;margin-bottom:-0.5em">
-              <md-slider step="0.05" min="0" max="5.0" ng-model="self.nWeight" ng-change="self.getNextWords()" aria-label="Context" class="md-warn">
-            </md-slider-container>       
+          <div layout="row" layout-align="start center">
+            <md-switch class="md-warn" style="margin:0;margin-right:1em" ng-model="self.useDistance" ng-change="self.setUseDistance(self.useDistance)"></md-switch>
+            <span style="cursor:pointer" ng-click="self.setUseDistance(!self.useDistance)">{{'INCLUDESIMILARWORDS' | trans}}</span>
           </div>  
-          <div layout="row" layout-align="space-between center" style="user-select:none;-webkit-user-select:none;margin-left: 0.2em; margin-right: 0.2em; font-size: 80%; margin-top: -0.5em;">
-            <span>{{'LOW' | trans}}</span>
-            <span>{{self.nWeight}}</span>
-            <span>{{'HIGH' | trans}}</span>
-          </div>
-          <p>
-            Stell ein, wie stark das n eines n-Gramms bei der Wahl des nächsten Worts gewichtet werden soll.
-          </p>
--->
+          <div layout="row" layout-align="start center">
+            <md-switch class="md-warn" style="margin:0;margin-right:1em" ng-model="self.useSynonyms" ng-change="self.setUseSynonyms(self.useSynonyms)"></md-switch>
+            <span style="cursor:pointer" ng-click="self.setUseSynonyms(!self.useSynonyms)">{{'USESYNONYMS' | trans}}</span>
+          </div>  
+
     </md-dialog-content>
 </md-dialog>
 </script> 
@@ -602,7 +631,7 @@
 </script> 
 
 <script type="text/ng-template" id="abcMusicPlayer.html">
-<md-dialog aria-label="ABC Music Player" style="min-width: 50%;max-width:80%;width:800px">
+<md-dialog aria-label="ABC Music Player" style="max-width:80%;width:800px">
   <md-dialog-content style="padding:16px">
     <ng-md-icon ng-click="cancel()" style="cursor:pointer;outline:none;float:right;fill:black" icon="close"></ng-md-icon>
     <div id="abcPlayerPaper"></div>
@@ -610,6 +639,79 @@
   </md-dialog-content>
 </md-dialog>
 </script> 
+
+<script type="text/ng-template" id="TicTacToePlayer.html">
+<md-dialog aria-label="TicTacToe Player" style="max-width:80%;width:450px">
+  <md-dialog-content style="padding:16px">
+    <ng-md-icon ng-click="cancel()" style="cursor:pointer;outline:none;float:right;fill:black" icon="close"></ng-md-icon>
+    <div layout="row" layout-xs="column">
+      <div id="TicTacToeBoard">
+        <div class="row" ng-repeat="c in [0,1,2] track by $index">
+          <div class="cell">{{board[c][0]}}</div>
+          <div class="cell">{{board[c][1]}}</div>
+          <div class="cell">{{board[c][2]}}</div>
+        </div>
+      </div>
+      <div id="TicTacToeLog" style="height:12em;overflow:auto;width:100%">
+        <div style="padding:16px;padding-top:8px">
+          <div ng-bind-html="getTicTacToeMoveList()"></div>
+        </div>
+      </div>
+    </div>
+    <div layout="row">
+      <md-button ng-click="replay()" ng-disabled="isPlaying()"><ng-md-icon icon="play_arrow"></ng-md-icon> {{'REPLAYGAME' | trans}}</md-button>
+      <div layout="row" ng-if="isPlaying()">
+      <md-button ng-click="stop()" style="min-width:1em"><ng-md-icon icon="stop"></ng-md-icon></md-button>
+        <div layout="row" layout-align="center center">
+          <ng-md-icon icon="update" style="top: 2px;font-size:80%"></ng-md-icon> 
+          <md-slider min="100" max="2000" ng-model="self.WAIT_TIME_BETWEEN_MOVES" class="md-warn"></md-slider>
+        </div>
+      </div>
+    </div>
+    <md-switch ng-model="self.TICTACTOE_ALLOW_OVERWRITE">{{'TICTACTOE_ALLOW_OVERWRITE' | trans}}</md-switch>
+  </md-dialog-content>
+</md-dialog>
+</script>
+
+<script type="text/ng-template" id="ChessPlayer.html">
+<md-dialog aria-label="Chess Player" style="min-width: 50%;max-width:80%;width:800px">
+  <md-dialog-content style="padding:16px">
+    <ng-md-icon ng-click="cancel()" style="cursor:pointer;outline:none;float:right;fill:black" icon="close"></ng-md-icon>
+    <div layout="row" layout-xs="column">
+      <div id="ChessBoard">
+        <div class="row" ng-repeat="r in [7,6,5,4,3,2,1,0] track by $index">
+          <div class="cell" ng-class="{'b':r % 2 == 0}">{{board[0][r]}}<md-tooltip>{{'A'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 1}">{{board[1][r]}}<md-tooltip>{{'B'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 0}">{{board[2][r]}}<md-tooltip>{{'C'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 1}">{{board[3][r]}}<md-tooltip>{{'D'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 0}">{{board[4][r]}}<md-tooltip>{{'E'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 1}">{{board[5][r]}}<md-tooltip>{{'F'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 0}">{{board[6][r]}}<md-tooltip>{{'G'+(r+1)}}</md-tooltip></div>
+          <div class="cell" ng-class="{'b':r % 2 == 1}">{{board[7][r]}}<md-tooltip>{{'H'+(r+1)}}</md-tooltip></div>
+        </div>
+      </div>
+      <div id="ChessLog" style="height:24em;overflow:auto;width:100%">
+        <div style="padding:16px;padding-top:8px">
+          <div ng-bind-html="getChessMoveList()"></div>
+        </div>
+      </div>
+    </div>
+    <div layout="row">
+      <md-button ng-click="replay()" ng-disabled="isPlaying()"><ng-md-icon icon="play_arrow"></ng-md-icon> {{'REPLAYGAME' | trans}}</md-button>
+      <div layout="row" ng-if="isPlaying()">
+      <md-button ng-click="stop()" style="min-width:1em"><ng-md-icon icon="stop"></ng-md-icon></md-button>
+        <div layout="row" layout-align="center center">
+          <ng-md-icon icon="update" style="top: 2px;font-size:80%"></ng-md-icon> 
+          <md-slider min="100" max="2000" ng-model="self.WAIT_TIME_BETWEEN_MOVES" class="md-warn"></md-slider>
+        </div>
+      </div>
+    </div>
+    <md-switch ng-model="self.CHESS_MOVE_THROUGH_PIECES">{{'CHESS_MOVE_THROUGH_PIECES' | trans}}</md-switch>
+    <md-switch ng-model="self.CHESS_ALLOW_NEW_PIECES">{{'CHESS_ALLOW_NEW_PIECES' | trans}}</md-switch>
+    <md-switch ng-model="self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE">{{'CHESS_ALLOW_MANY_PIECES_ON_SQUARE' | trans}}</md-switch>
+  </md-dialog-content>
+</md-dialog>
+</script>
 
 <script type="text/ng-template" id="testBench.html">
 <md-dialog aria-label="Test Bench" style="min-width: 50%;max-width:80%;width:600px">
@@ -1249,6 +1351,46 @@ body.smallScreen .seeInsideBtn2 {
 .document_CY {background: #9932CCCC !important; }
 .document_CZ {background: #FF6347CC !important; }
 
+
+#TicTacToeBoard .row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+#TicTacToeBoard .cell {
+  width:2em;
+  height:2em;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  font-size: 150%;
+  border:1px solid gray;
+}
+
+#ChessBoard .row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+#ChessBoard .cell {
+  width:2em;
+  height:2em;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  font-size: 150%;
+}
+#ChessBoard .cell.b{
+  background:rgb(200,200,200);
+}
+
+
 </style>
 <script src="node_modules/angular/angular.js"></script> 
 <script src="node_modules/angular-aria/angular-aria.js"></script> 
@@ -1368,6 +1510,7 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
   self.maxNGrams = 6;      // Show statistics for one to .. words
 
   self.showInsideButton = true;
+  self.usePromptCalculations = false;
 
   self.ignoreCase = false; // Case-sensitivity
 
@@ -1569,9 +1712,9 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
     if (!s.length) return t.length;
     if (!t.length) return s.length;
     const arr = [];
-    for (let i = 0; i <= t.length; i++) {
+    for (var i = 0; i <= t.length; i++) {
       arr[i] = [i];
-      for (let j = 1; j <= s.length; j++) {
+      for (var j = 1; j <= s.length; j++) {
         arr[i][j] =
           i === 0
             ? j
@@ -1656,13 +1799,28 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
 
   self.useDistance = false;
   self.useSynonyms = false;
-  self.maxDistance = 0.95;
+  self.maxDistance = 0.925;
 
   self.setUseSynonyms = function(value){
     if(self.useSynonyms != value){
       self.oldNextSuggestions = self.nextSuggestions;     
       self.oldSortedMatching = self.sortedMatching.sorted;
       self.useSynonyms = value;        
+      self.needRecalculateDocumentContext = true;  
+      self.calculateDocumentContext();
+      self.getNextWords();      
+      self.rebuildMatchList();
+      if(self.oldSortedMatching.length == self.sortedMatching.sorted.length){
+        self.nextSuggestions = self.oldNextSuggestions;
+      }
+    }
+  };
+
+  self.setUsePromptCalculations = function(value){
+    if(self.usePromptCalculations != value){
+      self.oldNextSuggestions = self.nextSuggestions;     
+      self.oldSortedMatching = self.sortedMatching.sorted;
+      self.usePromptCalculations = value;        
       self.needRecalculateDocumentContext = true;  
       self.calculateDocumentContext();
       self.getNextWords();      
@@ -1739,7 +1897,7 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
   };
 
   const shuffleArray = array => {
-    for (let i = array.length - 1; i > 0; i--) {
+    for (var i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       const temp = array[i];
       array[i] = array[j];
@@ -1747,8 +1905,8 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
     }
   }
   function countWordsInString(str1, str2){
-    let next = 0;
-    let c = 0;
+    var next = 0;
+    var c = 0;
     do {
       var n = str2.indexOf(str1, next);
       c = c +1;
@@ -1953,8 +2111,10 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
 
     function randomLastElements(){
       self.nextSuggestions.sort(function(a,b){
-        //if(a.matches < b.matches) return 1;
-        //if(a.matches > b.matches) return -1;
+        if(!self.usePromptCalculations){
+          if(a.matches < b.matches) return 1;
+          if(a.matches > b.matches) return -1;
+        }
         if(a.calc < b.calc) return 1;
         if(a.calc > b.calc) return -1;
         if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
@@ -1995,8 +2155,10 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
       }
       self.nextSuggestions = newItems;
       self.nextSuggestions.sort(function(a,b){
-        //if(a.matches < b.matches) return 1;
-        //if(a.matches > b.matches) return -1;
+        if(!self.usePromptCalculations){
+          if(a.matches < b.matches) return 1;
+          if(a.matches > b.matches) return -1;
+        }
         if(a.calc < b.calc) return 1;
         if(a.calc > b.calc) return -1;
         if(a.text.toLowerCase() < b.text.toLowerCase()) return -1;
@@ -2036,44 +2198,47 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
           w.source = self.wordList[i][z].refs;
           w.percent = self.wordList[i][z].percent;
           w.calc = w.percent;
-          if(self.wordList[i][z].index){
-      
-            var SOPMatches = currentInput.match(/❯/g);
-            var writtenSOPs = SOPMatches && SOPMatches.length ? SOPMatches.length : 0;
-            w.index = self.wordList[i][z].index; // add SOP index list
-            var SOPSum = 1;
-            for(var x = 0; x < w.index.length; x++){
-              SOPSum += self.documentContext[w.index[x].d] / Math.max(1,Math.abs(w.index[x].n - writtenSOPs));
+
+          if(self.usePromptCalculations){
+            // Start of paragraph 
+            if(self.wordList[i][z].index){
+              var SOPMatches = currentInput.match(/❯/g);
+              var writtenSOPs = SOPMatches && SOPMatches.length ? SOPMatches.length : 0;
+              w.index = self.wordList[i][z].index; // add SOP index list
+              var SOPSum = 1;
+              for(var x = 0; x < w.index.length; x++){
+                SOPSum += self.documentContext[w.index[x].d] / Math.max(1,Math.abs(w.index[x].n - writtenSOPs));
+              }
+              // median value of all SOP index positions
+              w.calc = w.calc * (1+SOPSum/10); // the higher the index the lower the value here
             }
-            // median value of all SOP index positions
-            w.calc = w.calc * (1+SOPSum/10); // the higher the index the lower the value here
-          }
 
-          // calculate the document context in
-          var sum = 0;
-          var sumcount = 0;
-          var totalmatches = 0;
-          for(var k in w.source){
-            sum += w.source[k] * self.documentContext[k] * self.context;
-            if(w.source[k] > 0) sumcount++;
-            totalmatches += w.source[k];
-          }
-          if(sumcount > 0){
-            var avg = (sum / sumcount / totalmatches);
-            w.calc = w.calc + avg;
-          }
+            // calculate the document context in
+            var sum = 0;
+            var sumcount = 0;
+            var totalmatches = 0;
+            for(var k in w.source){
+              sum += w.source[k] * self.documentContext[k] * self.context;
+              if(w.source[k] > 0) sumcount++;
+              totalmatches += w.source[k];
+            }
+            if(sumcount > 0){
+              var avg = (sum / sumcount / totalmatches);
+              w.calc = w.calc + avg;
+            }
 
-          // lower already existing strings in input
-          /*
-          if(i > 1){
-            var existing = countWordsInString(self.wordList[i][z].text, currentInput)+1;
-            existing = existing / 1.25; 
-            w.calc = w.calc * (1 / existing);
-          }
-          */
+            // lower already existing strings in input
+            /*
+            if(i > 1){
+              var existing = countWordsInString(self.wordList[i][z].text, currentInput)+1;
+              existing = existing / 1.25; 
+              w.calc = w.calc * (1 / existing);
+            }
+            */
 
-          // calculate n of n-gram on top
-          w.calc = w.calc * (1 + self.wordList[i][z].n * self.nWeight);
+            // calculate n of n-gram on top
+            w.calc = w.calc * (1 + self.wordList[i][z].n * self.nWeight);
+          }
 
           self.wordList[i][z].calc = w.calc;
 
@@ -2628,7 +2793,9 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
       prompt: self.prompt,
       promptDefault : self.promptDefault,
       task: self.task,
-      showMusicPlayer: self.showMusicPlayer
+      showMusicPlayer: self.showMusicPlayer,
+      showTicTacToePlayer: self.showTicTacToePlayer,
+      showChessPlayer: self.showChessPlayer
     };
     self.saveLocalStorage("slm_settings",JSON.stringify(settings));
     self.saveLocalStorage("slm_input",JSON.stringify(self.input));
@@ -2792,8 +2959,10 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
         return 0;
       }
       if(self.matchingSort != 'alpha'){
-        //if(a.matches < b.matches) return 1;
-        //if(a.matches > b.matches) return -1;
+        if(!self.usePromptCalculations){
+          if(a.matches < b.matches) return 1;
+          if(a.matches > b.matches) return -1;
+        }
         if(a.calc < b.calc) return 1;
         if(a.calc > b.calc) return -1;
         if(a.n < b.n) return 1;
@@ -2801,8 +2970,9 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
 
         if(a.percent < b.percent) return 1;
         if(a.percent > b.percent) return -1;
-        if(a.text < b.text) return -1;
-        if(a.text > b.text) return 1;
+        if(a.tokens[a.tokens.length-1].toLowerCase() < b.tokens[b.tokens.length-1].toLowerCase()) return -1;
+        if(a.tokens[a.tokens.length-1].toLowerCase() > b.tokens[b.tokens.length-1].toLowerCase()) return 1;
+
         return 0;
       }
     });
@@ -3273,6 +3443,8 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
           }else self.showngram = 3;
 
           self.showMusicPlayer = false;
+          self.showTicTacToePlayer = false;
+          self.showChessPlayer = false;
 
           self.firstPrompt = true;
           self.isGenerating = false;
@@ -3359,8 +3531,10 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
           self.isGenerating = false;
 
           self.showMusicPlayer = name == "default4"; // only for abc example
+          self.showTicTacToePlayer = name == "default6"; // only for TicTacToe
+          self.showChessPlayer = name == "default7"; // only for chess
 
-          deferred.resolve();
+          deferred.resolve(); 
           $timeout(function() {
             self.updateDocuments();
             self.rebuildNGrams();
@@ -3381,6 +3555,8 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
   };
 
   self.showMusicPlayer = false;
+  self.showTicTacToePlayer = false;
+  self.showChessPlayer = false;
 
   self.playABCMusic = function(ev){
     self.dialogOpen = true;
@@ -3396,8 +3572,10 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
           $mdDialog.cancel();
         };
         $timeout(function(){
-          var abcContent = document.getElementById('inputBox').innerText;
-
+          var abcContent = "";
+          document.querySelectorAll('#inputBox .input').forEach(e => {
+            abcContent += e.innerText;
+          });
           var abcOptions = {
             add_classes: true,
             responsive: "resize"
@@ -3498,6 +3676,678 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
       targetEvent: ev,
       clickOutsideToClose:true
     });    
+  };
+
+
+  self.CHESS_MOVE_THROUGH_PIECES = false;
+  self.CHESS_ALLOW_NEW_PIECES = false;
+  self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE = false;
+  self.WAIT_TIME_BETWEEN_MOVES = 1500;
+  self.TICTACTOE_ALLOW_MANY_ON_SQUARE = false;
+
+  self.playChess = function(ev){
+    var chessMoveList = [];
+    var isPlaying = false;
+    var doStop = false;
+    const white_K = '♔';
+    const white_Q = '♕';
+    const white_R = '♖';
+    const white_B = '♗';
+    const white_N = '♘';
+    const white_P = '♙';
+
+    const black_k = '♚';
+    const black_q = '♛';
+    const black_r = '♜';
+    const black_b = '♝';
+    const black_n = '♞';
+    const black_p = '♟';
+
+    const whitePieces = [ white_K, white_Q, white_B, white_N, white_R, white_P ];
+    const blackPieces = [ black_k, black_q, black_b, black_n, black_r, black_p ];
+
+    var visualizeChessGame = function(board) {
+      var gameContent = "";
+      document.querySelectorAll('#inputBox .input').forEach(e => {
+        gameContent += e.innerText;
+      });
+
+      function integerizePos(s) {
+        var charCodeA = 97;
+        if (s.match(/^\d$/)) {
+          return parseInt(s) - 1;
+        } else if (s.match(/^[abcdefgh]$/)) {
+          return s.charCodeAt(0) - charCodeA;
+        } else {
+          return -1;
+        }
+      }
+
+      function findPiecePlaces(move) {
+        var places = [];
+        for (var i = 0; i < 8; i++) {
+          for (var j = 0; j < 8; j++) {
+            if (board[i][j].match(move.piece)) {
+              places.push([i, j]);
+            }
+          }
+        }
+        return places;
+      }
+
+      function lineOfSight(f1,r1, f2,r2, ignoreP) {
+        // they must already be checked for being on a line
+        // all this does is check the intervening squares are empty
+        if (ignoreP) return true; // not using this for now but may later
+        if (self.CHESS_MOVE_THROUGH_PIECES) return true;
+        // check that all squares between f1,r1 and f2,r2 (excl) are unoccupied
+        if (f1 === f2) {
+          if (r1 === r2) return true; // or false? doesn't matter?
+          var inc = 1;
+          if (r2 < r1) inc = -1;
+          for (var i = r1 + inc; i !== r2; i += inc) {
+            if (board[f1][i] !== '') return false;
+          }
+        } else if (r1 === r2) {
+          var inc = 1;
+          if (f2 < f1) inc = -1;
+          for (var i = f1 + inc; i !== f2; i += inc) {
+            if (board[i][f1] !== '') return false;
+          }
+        } else {
+          var finc = 1, rinc = 1;
+          if (f2 < f1) finc = -1;
+          if (r2 < r1) rinc = -1;
+          // increase in both directions at the same time
+          // not more then 8 possible
+          var x = f1 + finc;
+          var y = r1 + rinc;
+          for(var i=0; i < 8; i++){
+            if (x < 0 || y < 0) return false;
+            if (x > 7 || y > 7) return false;
+            if (board[x][y] !== '') return false;
+            if(x == f2 && y == r2) break; // at target spot
+          } 
+        }
+        return true;
+      }
+
+      function onStraightPath(f1, r1, f2, r2) {
+        return ((f1 === f2) || (r1 === r2)) && lineOfSight(f1,r1, f2,r2);
+      }
+
+      function onDiagPath(f1, r1, f2, r2) {
+        return (Math.abs(f1-f2) === Math.abs(r1-r2)) && lineOfSight(f1,r1, f2,r2);
+      }
+
+      function onKnightPath(f1, r1, f2, r2) {
+        // console.log('doing onKnightPath', f1, r1, f2, r2);
+        var fdiff = Math.abs(f1-f2);
+        var rdiff = Math.abs(r1-r2);
+        return (((fdiff == 2) && (rdiff == 1)) || ((fdiff == 1) && (rdiff == 2)));
+      }
+
+      function pieceImage(x, player) {
+        if (player === 'w') {
+         if (x == 'K') { return white_K; }
+         if (x == 'Q') { return white_Q; }
+         if (x == 'R') { return white_R; }
+         if (x == 'B') { return white_B; }
+         if (x == 'N') { return white_N; }
+         if (x == 'P') { return white_P; }
+        } else {
+         if (x == 'K') { return black_k; }
+         if (x == 'Q') { return black_q; }
+         if (x == 'R') { return black_r; }
+         if (x == 'B') { return black_b; }
+         if (x == 'N') { return black_n; }
+         if (x == 'P') { return black_p; }
+        }
+      }
+
+      function parseAllMoves(gameContent) {
+        // console.log('doing parseAllMoves', gameContent);
+        var listOfMovesOG = gameContent.trim().split(/\s+/);
+        var listOfMoves = [];
+        var player = 'w';
+
+        while (listOfMovesOG.length > 0) {
+          var moveOG = listOfMovesOG.shift();
+          var currPlayer = player;
+          var move = {
+            notation: currPlayer + ' ' + moveOG,
+            player: currPlayer,
+            piece: (currPlayer === 'w' ? white_P : black_p),
+            capture: false,
+            tgtFile: false,
+            tgtRank: false,
+            srcFile: false,
+            srcRank: false,
+            castle: false,
+            impossibleMove: false
+          };
+
+          listOfMoves.push(move);
+
+          player = (currPlayer === 'w') ? 'b' : 'w';
+
+          if (moveOG.match('O-O')) {
+            move.piece = (currPlayer === 'w') ? white_R : black_r;
+            var queenside_p = moveOG.match('O-O-O');
+            var castle_rank = (currPlayer === 'w') ? integerizePos('1') : integerizePos('8');
+            move.castle = {
+              rank: castle_rank,
+              queenside: queenside_p,
+            };
+            continue;
+          }
+
+          if (moveOG.match('x')) {
+            moveOG = moveOG.replace('x', '');
+            move.capture = true;
+          }
+
+          var moveN = moveOG.length;
+          if (moveN >= 2) {
+            move.tgtRank = integerizePos(moveOG[moveN-1]);
+            move.tgtFile = integerizePos(moveOG[moveN-2]);
+            moveN -= 2;
+          } else {
+            continue;
+          }
+
+          if (moveN == 1) {
+            if (moveOG[0].match(/[a-h]/)) {
+              move.srcFile = integerizePos(moveOG[0]);
+            } else {
+              move.piece = pieceImage(moveOG[0], currPlayer);
+            }
+          }
+
+          if (moveN == 2) {
+            if (moveOG[1].match(/[a-h]/)) {
+              move.piece = pieceImage(moveOG[0], currPlayer);
+              move.srcFile = integerizePos(moveOG[1]);
+            } else if (moveOG[0].match(/[a-h]/) && moveOG[1].match(/[1-8]/)) {
+              move.srcFile = integerizePos(moveOG[0]);
+              move.srcRank = integerizePos(moveOG[1]);
+            }
+          }
+
+          if (moveN == 3) {
+            if (moveOG[1].match(/[a-h]/) && moveOG[2].match(/[1-8]/)) {
+              move.piece = pieceImage(moveOG[0], currPlayer);
+              move.srcFile = integerizePos(moveOG[1]);
+              move.srcRank = integerizePos(moveOG[2]);
+            }
+          }
+        }
+        // console.log('returning listOfMoves', listOfMoves);
+        return listOfMoves;
+      }
+
+      function pawnRankBefore(move) {
+        var x;
+        if (move.piece === black_p) {
+          x = move.tgtRank + 1;
+          if (x >= 8) { x = false; }
+        } else {
+          x = move.tgtRank - 1;
+          if (x < 0) { x = false; }
+        }
+        return x;
+      }
+
+      function pawnFileLeftBefore(move) {
+        var x = move.tgtFile - 1;
+        if (x < 0) { x = false; }
+        return x;
+      }
+
+      function pawnFileRightBefore(move) {
+        var x = move.tgtFile + 1;
+        if (x >= 8) { x = false; }
+        return x;
+      }
+
+      function pawnHalfWayP(move) {
+        // console.log('doing pawnHalfWayP', move.piece, move.tgtFile, move.tgtRank);
+        if (move.piece === black_p) {
+          return (move.tgtRank === 4);
+        } else {
+          return (move.tgtRank === 3);
+        }
+      }
+
+      function setPrevPos(move) {
+        // console.log('doing setPrevPos', move);
+        if (move.castle) {
+          var rook = move.piece;
+          var king = (rook === white_R) ? white_K : black_k;
+          var rookFile = (move.castle.queenside) ? integerizePos('a') :
+          integerizePos('h');
+          var kingFile = integerizePos('e');
+          if ((board[rookFile][move.castle.rank].match(rook)) &&
+              (board[kingFile][move.castle.rank].match(king)) &&
+            lineOfSight(rookFile, move.castle.rank, kingFile, move.castle.rank)) {
+            ;
+          } else {
+            move.impossibleMove = true;
+          }
+          return;
+        }
+
+        if (move.srcFile === false || move.srcRank === false) {
+          if (move.piece === white_P || move.piece === black_p) { 
+            // pawns
+            if (move.capture) {
+              if (move.srcRank === false) {
+                var calcSrcRank = pawnRankBefore(move);
+                if (calcSrcRank) {
+                  move.srcRank = calcSrcRank;
+                }
+              }
+              if (move.srcRank !== false && move.srcFile === false) {
+                var leftSrcFile = pawnFileLeftBefore(move);
+                var rightSrcFile = pawnFileRightBefore(move);
+                if (leftSrcFile !== false && board[leftSrcFile][move.srcRank] === move.piece) {
+                  move.srcFile = leftSrcFile;
+                } else if (rightSrcFile !== false) {
+                  move.srcFile = rightSrcFile;
+                }
+              }
+            } else if (pawnHalfWayP(move)) {
+              // console.log('yes pawn half way', move.tgtFile, move.tgtRank);
+              if (move.srcFile === false) { move.srcFile = move.tgtFile; }
+              if (move.srcFile !== false && move.srcRank === false) {
+                var calcSrcRank = pawnRankBefore(move), calcSrcRank2 = false;
+                if (calcSrcRank !== false) {
+                  calcSrcRank2 = (move.piece === black_p ? calcSrcRank + 1 : calcSrcRank - 1);
+                  if (calcSrcRank2 < 0 || calcSrcRank2 > 7) {
+                    calcSrcRank2 = false;
+                  }
+                }
+
+                if (calcSrcRank !== false &&
+                  board[move.srcFile][calcSrcRank] === move.piece) {
+                  move.srcRank = calcSrcRank;
+                } else if (calcSrcRank2 !== false &&
+                  board[move.srcFile][calcSrcRank2] === move.piece &&
+                  lineOfSight(move.srcFile,calcSrcRank2, move.tgtFile,move.tgtRank)) {
+                  move.srcRank = calcSrcRank2;
+                }
+              }
+            } else { // ordinary pawn advance
+              if (move.srcFile === false) { move.srcFile = move.tgtFile; }
+              if (move.srcFile !== false && move.srcRank === false) {
+                var calcSrcRank = pawnRankBefore(move);
+                if (calcSrcRank !== false) {
+                  move.srcRank = calcSrcRank;
+                }
+              }
+            }
+          } else if (move.piece === white_K || move.piece === black_k) {
+            // kings
+            var kingPlaces = findPiecePlaces(move);
+            for (var i = 0; i < kingPlaces.length; i++) {
+              var kingPlace = kingPlaces[i];
+              var calcSrcFile = kingPlace[0];
+              var calcSrcRank = kingPlace[1];
+              if (move.srcFile === false || move.srcRank === false) {
+                move.srcFile = calcSrcFile;
+                move.srcRank = calcSrcRank;
+                break;
+              }
+            }
+          } else if (move.piece === white_Q || move.piece === black_q) {
+            // queens
+            var queenPlaces = findPiecePlaces(move);
+            for (var i = 0; i < queenPlaces.length; i++) {
+              var queenPlace = queenPlaces[0];
+              var calcSrcFile = queenPlace[0];
+              var calcSrcRank = queenPlace[1];
+              if (onDiagPath(calcSrcFile, calcSrcRank, move.tgtFile, move.tgtRank) ||
+                  onStraightPath(calcSrcFile, calcSrcRank, move.tgtFile, move.tgtRank)) {
+                if (move.srcFile === false || move.srcRank) {
+                  move.srcFile = calcSrcFile;
+                  move.srcRank = calcSrcRank;
+                  break;
+                }
+              }
+            }
+          } else if (move.piece === white_B || move.piece === black_b) {
+            // bishops
+            var bishopPlaces = findPiecePlaces(move);
+            for (var i = 0; i < bishopPlaces.length; i++) {
+              var bishopPlace = bishopPlaces[i];
+              if (onDiagPath(bishopPlace[0], bishopPlace[1],
+                move.tgtFile, move.tgtRank)) {
+                if (move.srcFile === false || move.srcRank === false) {
+                  move.srcFile = bishopPlace[0];
+                  move.srcRank = bishopPlace[1];
+                  break;
+                }
+              }
+            }
+          } else if (move.piece === white_N || move.piece === black_n) {
+            // knights
+            var knightPlaces = findPiecePlaces(move);
+            // console.log('knightPlaces =', knightPlaces);
+            for (var i = 0; i < knightPlaces.length; i++) {
+              var knightPlace = knightPlaces[i];
+              if (onKnightPath(knightPlace[0], knightPlace[1],
+                move.tgtFile, move.tgtRank)) {
+                // console.log('knight path confirmed', knightPlaces[i][0], knightPlaces[i][1]);
+                if (move.srcFile === false || move.srcRank === false) {
+                  move.srcFile = knightPlace[0];
+                  move.srcRank = knightPlace[1];
+                  break;
+                }
+                // console.log('move.piece =', move.piece);
+              }
+            }
+          } else if (move.piece === white_R || move.piece === black_r) {
+            // rooks
+            var rookPlaces = findPiecePlaces(move);
+            for (var i = 0; i < rookPlaces.length; i++) {
+              var rookPlace = rookPlaces[i];
+              if (onStraightPath(rookPlace[0], rookPlace[1],
+                move.tgtFile, move.tgtRank)) {
+                if (move.srcFile === false || move.srcRank === false) {
+                  move.srcFile = rookPlace[0];
+                  move.srcRank = rookPlace[1];
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // console.log('src =', move.piece, move.srcFile, move.srcRank);
+
+        if (!self.CHESS_ALLOW_NEW_PIECES) {
+          if (move.srcFile !== false && move.srcRank !== false) {
+            if (board[move.srcFile][move.srcRank] !== move.piece) {
+              // console.log('setting imposs move i');
+              move.impossibleMove = true;
+            }
+          } else {
+            // console.log('setting imposs move ii');
+            move.impossibleMove = true;
+          }
+        }
+      }
+
+      function captureEnemyPieces(move) {
+        // console.log('doing captureEnemyPieces');
+        var x = board[move.tgtFile][move.tgtRank];
+        var pcs = whitePieces;
+        if (move.player == 'w') pcs = blackPieces;
+        for (var i = 0; i < pcs.length; i++) {
+          var pc = pcs[i];
+          var x = board[move.tgtFile][move.tgtRank];
+          board[move.tgtFile][move.tgtRank] = x ? x.replaceAll(pc, '') : '';
+        }
+      }
+
+      function performChessMove(move) {
+        // console.log('moving', move.piece, move);
+        if (move.impossibleMove) {
+          chessMoveList.push(move.notation + " "+self.trans('SKIPPED_NOT_ALLOWED'));
+          console.log(move.notation, 'skipped');
+          return;
+        } else {
+          chessMoveList.push(move.notation);
+          console.log(move.notation, 'done');
+        }
+        if (move.castle) {
+          performCastle(move);
+        } else {
+          if (move.srcFile !== false && move.srcRank !== false &&
+            board[move.srcFile][move.srcRank].match(move.piece)) {
+            var sq = board[move.srcFile][move.srcRank];
+            board[move.srcFile][move.srcRank] = sq.replace(move.piece, '');
+          }
+          if (move.capture) captureEnemyPieces(move);
+          if (self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE) {
+            board[move.tgtFile][move.tgtRank] += move.piece;
+          } else {
+            board[move.tgtFile][move.tgtRank] = move.piece;
+          }
+        }
+      }
+      function performCastle(move) {
+        var rook = move.piece;
+        var king = (rook === white_R) ? white_K : black_k;
+        var x = board[integerizePos('e')][move.castle.rank];
+        board[integerizePos('e')][move.castle.rank] = x.replace(king, '');
+        if (move.castle.queenside) {
+          if (self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE) {
+            board[integerizePos('c')][move.castle.rank] += king;
+          } else {
+            board[integerizePos('c')][move.castle.rank] = king;
+          }
+          x = board[integerizePos('a')][move.castle.rank];
+          board[integerizePos('a')][move.castle.rank] = x.replace(rook, '');
+          if (self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE) {
+            board[integerizePos('d')][move.castle.rank] += rook;
+          } else {
+            board[integerizePos('d')][move.castle.rank] = rook;
+          }
+        } else {
+          if (self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE) {
+            board[integerizePos('g')][move.castle.rank] += king;
+          } else {
+            board[integerizePos('g')][move.castle.rank] = king;
+          }
+          x = board[integerizePos('h')][move.castle.rank];
+          board[integerizePos('h')][move.castle.rank] = x.replace(rook, '');
+          if (self.CHESS_ALLOW_MANY_PIECES_ON_SQUARE) {
+            board[integerizePos('f')][move.castle.rank] += rook;
+          } else {
+            board[integerizePos('f')][move.castle.rank] = rook;
+          }
+        }
+      }
+
+      var numMoves = 0;
+      const MAXMOVES = 5;
+
+      function visualizeOneChessMove() {
+        // uncomment following if limiting to first MAXMOVES moves
+        // numMoves++;
+        var move = gameMoves.shift();
+        // console.log('doing move', move);
+        setPrevPos(move);
+        performChessMove(move);
+        if(doStop){
+          isPlaying = false;
+          doStop = false;
+          return;
+        }
+        if (numMoves < MAXMOVES && gameMoves.length > 0) {
+          $timeout(visualizeOneChessMove, 2010 - self.WAIT_TIME_BETWEEN_MOVES);
+        }else isPlaying = false;
+      }
+
+      var gameMoves = parseAllMoves(gameContent);
+      chessMoveList = [];
+      isPlaying = true;
+      $timeout(visualizeOneChessMove, 2010 - self.WAIT_TIME_BETWEEN_MOVES);
+    };
+    // console.log('doing playChess');
+
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+        doStop = true; 
+      },
+      controller: function ($scope, $mdDialog) {
+        $scope.self = self;
+        function initializeChessBoard() {
+          $scope.board = [];
+          chessMoveList = [];
+          for (var i = 0; i < 8; i++) {
+            $scope.board[i] = [];
+            for (var j = 0; j < 8; j++) {
+              $scope.board[i][j] = '';
+            }
+          }
+          $scope.board[0][0] = white_R;
+          $scope.board[1][0] = white_N;
+          $scope.board[2][0] = white_B;
+          $scope.board[3][0] = white_Q;
+          $scope.board[4][0] = white_K;
+          $scope.board[5][0] = white_B;
+          $scope.board[6][0] = white_N;
+          $scope.board[7][0] = white_R;
+          //
+          $scope.board[0][7] = black_r;
+          $scope.board[1][7] = black_n;
+          $scope.board[2][7] = black_b;
+          $scope.board[3][7] = black_q;
+          $scope.board[4][7] = black_k;
+          $scope.board[5][7] = black_b;
+          $scope.board[6][7] = black_n;
+          $scope.board[7][7] = black_r;
+          //
+          for (var i = 0; i < 8; i++) {
+            $scope.board[i][1] = white_P;
+          }
+          //
+          for (var i = 0; i < 8; i++) {
+            $scope.board[i][6] =  black_p;
+          }
+        }
+        $scope.getChessMoveList = function(){
+          var now = chessMoveList.join("<br>");
+          if($scope.lastLog != now){
+            $timeout(function () {
+              var scrollableDiv = document.getElementById('ChessLog');
+              if(scrollableDiv)
+                scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+            }, 100);          
+            $scope.lastLog = now;            
+          }
+          return $sce.trustAsHtml(now);
+        }
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+        $scope.replay = function(){
+          if(isPlaying) return;
+          initializeChessBoard();
+          visualizeChessGame($scope.board);
+        };
+        $scope.stop = function(){
+          doStop = true;
+        };
+        $scope.isPlaying = function(){
+          return isPlaying;
+        }
+        $timeout($scope.replay, 1000);
+      },
+      templateUrl: 'ChessPlayer.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+    });
+  };
+
+  self.playTicTacToe = function(ev){
+    var isPlaying = false;
+    var doStop = false;
+    var TicTacToeMoveList = [];
+    var visualizeTicTacToeGame = function(board) {
+      var gameContent = "";
+      document.querySelectorAll('#inputBox .input').forEach(e => {
+        gameContent += e.innerText;
+      });
+
+      var gameMoves = gameContent.trim().split(/\s+/);
+      function visualizeOneMove() {
+        var turn = gameMoves.shift();
+        var player = turn[0];
+        if (player !== 'X' && player !== 'O') { return; }
+        var row = parseInt(turn[1]) - 1;
+        var col = parseInt(turn[2]) - 1;
+        if(self.TICTACTOE_ALLOW_OVERWRITE || board[row][col] == '') {
+          board[row][col] = ' ';
+          $timeout(function(){
+            board[row][col] = player;  
+          },100);
+          TicTacToeMoveList.push(turn);
+        }else{
+          // skip
+          TicTacToeMoveList.push(turn+ " "+self.trans('SKIPPED_NOT_ALLOWED'));
+        }
+        if(doStop){
+          isPlaying = false;
+          doStop = false;
+          return;
+        }
+        if (gameMoves.length > 0) {
+          $timeout(visualizeOneMove, 2010 - self.WAIT_TIME_BETWEEN_MOVES);
+        }else isPlaying = false;
+      }
+      TicTacToeMoveList = [];
+      visualizeOneMove();
+      isPlaying = true;
+    };
+
+    self.dialogOpen = true;
+    $mdDialog.show({
+      onRemoving: function (event, removePromise) {
+        self.dialogOpen = false;
+        doStop = true;
+      },      
+      controller: function ($scope, $mdDialog) {
+        $scope.self = self;
+        function initializeBoard() {
+          $scope.board = []
+          for (var i = 0; i < 3; i++) {
+            $scope.board[i] = [];
+            for (var j = 0; j < 3; j++) {
+              $scope.board[i][j] = '';
+            }
+          }
+        }
+        $scope.getTicTacToeMoveList = function(){
+          var now = TicTacToeMoveList.join("<br>");
+          if($scope.lastLog != now){
+            $timeout(function () {
+              var scrollableDiv = document.getElementById('TicTacToeLog');
+              if(scrollableDiv)
+                scrollableDiv.scrollTop = scrollableDiv.scrollHeight;
+            }, 100);          
+            $scope.lastLog = now;            
+          }
+          return $sce.trustAsHtml(now);
+        }
+        $scope.cancel = function() {
+          $mdDialog.cancel();
+        };
+        $scope.replay = function(){
+          if(isPlaying) return;
+          initializeBoard();
+          visualizeTicTacToeGame($scope.board);
+        };
+        $scope.stop = function(){
+          doStop = true;
+        };
+        $scope.isPlaying = function(){
+          return isPlaying;
+        }
+        $timeout($scope.replay, 1000);
+      },
+      templateUrl: 'TicTacToePlayer.html',
+      parent: angular.element(document.body),
+      targetEvent: ev,
+      clickOutsideToClose:true
+
+    });
+
   };
 
   self.loadDocuments();
