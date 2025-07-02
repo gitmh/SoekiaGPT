@@ -3767,6 +3767,7 @@ function($scope, $mdBottomSheet, $mdSidenav, $mdMedia, $mdDialog, $timeout,$inte
             if (x > 7 || y > 7) return false;
             if (board[x][y] !== '') return false;
             if(x == f2 && y == r2) break; // at target spot
+            x += finc; y += rinc;
           } 
         }
         return true;
